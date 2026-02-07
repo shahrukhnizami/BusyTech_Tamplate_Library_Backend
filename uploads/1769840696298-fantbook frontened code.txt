@@ -1,0 +1,2543 @@
+{% schema %}
+{
+"name": "book functionality",
+"settings": [],
+"blocks": [
+  {
+      "type": "buy_buttons",
+      "name": "t:sections.main-product.blocks.buy_buttons.name",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_dynamic_checkout",
+          "default": true,
+          "label": "t:sections.main-product.blocks.buy_buttons.settings.show_dynamic_checkout.label",
+          "info": "t:sections.main-product.blocks.buy_buttons.settings.show_dynamic_checkout.info"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_gift_card_recipient",
+          "default": true,
+          "label": "t:sections.main-product.blocks.buy_buttons.settings.show_gift_card_recipient.label",
+          "info": "t:sections.main-product.blocks.buy_buttons.settings.show_gift_card_recipient.info"
+        }
+      ]
+    },
+],
+"presets": [
+    {
+        "name": "book functionality",
+        "settings": {}
+    }
+]
+}
+{%  endschema %}
+{%- assign product_form_id = 'product-form-' | append: section.id -%}
+  <!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" integrity="sha512-hvNR0F/e2J7zPPfLC9auFe3/SE0yG4aJCOd/qxew74NN7eyiSKjr7xJJMu1Jy2wf7FXITpWS1E/RY8yzuXN7VA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- Cropper.js JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" integrity="sha512-9KkIqdfN7ipEW6B6k+Aq20PV31bjODg4AA52W+tYtAE0jE0kMx49bjJ3FgvS56wzmyfMUHbQ4Km2b7l9+Y/+Eg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" integrity="sha512-XcIsjKMcuVe0Ucj/xgIXQnytNwBttJbNjltBV18IOnru2lDPe9KRRyvCXw6Y5H415vbBLRm8+q6fmLUU7DfO6Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+  #pdffileinput {
+    display: none;
+  }
+
+  input:focus,
+  .msg-div-inner p:focus {
+    box-shadow: none;
+  }
+
+  .book-section-padding {
+    padding-bottom: 50px;
+  }
+
+  .book-layout-1 {
+    padding-top: 50px;
+  }
+
+  .book-layout-1 img {
+    border-radius: 24px;
+  }
+
+  .btn-wrapper {
+    width: auto;
+    display: flex;
+    gap: 10px;
+  }
+
+  .book-creation-details {
+    background-image: url(https://cdn.shopify.com/s/files/1/0720/3294/4327/files/02-Photoroom.png?v=1755892269);
+    padding: 20px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .book-creation-input-divs {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .data-input {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .data-input:first-child {
+    width: 24%;
+  }
+
+  .data-input:first-child input {
+    padding-block: 19px;
+  }
+
+  .data-input.second-input label {
+    margin-bottom: 20px;
+  }
+
+  .data-input label {
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .data-input input,
+  .data-input .book-dropdown-main {
+    border: none;
+    outline: none;
+    padding: 18px 20px;
+    height: 60px;
+    font-size: 15px;
+    background-color: white;
+    position: relative;
+    width: 100%;
+    border-radius: 2px;
+    font-weight: 500;
+    width:100%;
+     -webkit-appearance: none;
+  }
+
+  .book-layout-1 .data-input:last-child {
+    width: 15%;
+  }
+
+  .data-input .book-dropdown-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .data-input .book-dropdown-main svg {
+    width: 18px;
+    height: 18px;
+    rotate: 180deg;
+  }
+
+  .dropdown-values {
+    position: absolute;
+    left: 0px;
+    width: 100%;
+    top: 120%;
+    background-color: white;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.178);
+    padding: 20px;
+    font-size: 14px;
+    z-index: 12;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+  }
+
+  .book-dropdown-main.active .dropdown-values {
+    pointer-events: all;
+    opacity: 1;
+    transform: translateY(0px);
+  }
+
+  .dropdown-values span {
+    display: block;
+  }
+
+  .book-creation-details .button-style {
+    margin-top: 22px;
+    font-size: 20px;
+    padding-block: 10px;
+  }
+
+  .book-page-layout-2 .error {
+    margin-top: 10px;
+    font-size: 14px;
+    color: red;
+  }
+
+  .book-page-layout-2 input {
+    background: none;
+    border: 1px solid;
+    color: black;
+    text-align: center;
+    font-size: 22px;
+    padding-block: 10px !important;
+    font-family: 'Zen Maru Gothic';
+    width: 100%;
+    -webkit-appearance: none;
+  }
+
+  .book-page-layout-2 input::placeholder {
+    color: black;
+    font-weight: 600;
+  }
+
+
+  .msg-div {
+    border-radius: 24px;
+    background-image: url(https://cdn.shopify.com/s/files/1/0720/3294/4327/files/hero-section-img_1.png?v=1755504897);
+    background-size: cover;
+    padding: 30px 80px;
+    text-align: center;
+  }
+
+  .msg-div h2 {
+    color: #fff;
+  }
+
+  .msg-div .sub-text {
+    color: #fff;
+    line-height: 25px;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  .msg-div  .predefined_text {
+    margin-top: 20px;
+    background: #031b3c;
+    color: #fff;
+    padding: 20px;
+}
+.predefined_text p {
+    margin: 0 0 15px;
+}
+.pre_select_wrap select {
+    padding: 10px 35px;
+    margin-left: 15px;
+}
+
+.pre_select_wrap select:focus {
+    outline: none;
+    box-shadow: none;
+}
+  .msg-div-inner {
+    backdrop-filter: blur(8px);
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 20px;
+    position: relative;
+  }
+
+  .msg-div-inner h3 {
+    color: #000;
+    z-index: 10;
+    position: relative;
+  }
+
+  .msg-div-inner p {
+    position: relative;
+    z-index: 10;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 25px;
+    margin-top: 10px;
+    display: block;
+  }
+
+  .blurred-bg {
+    display: block !important;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    filter: blur(10px);
+    border-radius: 20px;
+  }
+
+
+  /* ---- Book Layout 3 ---- */
+  .book-layout-3-main {
+    position: relative;
+  }
+
+  .book-layout-3 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  .book-layout-3-ele-1 {
+    right: 0%;
+    top: -2%;
+    width: 20%;
+  }
+
+  .book-layout-3-ele-2 {
+    right: 7%;
+    rotate: 10deg;
+    top: 0%;
+    width: 20%;
+  }
+
+  .book-layout-3-ele-3 {
+    right: 0%;
+    top: 0;
+    width: 50px;
+  }
+
+  .book-layout-3-ele-4 {
+    right: 8%;
+    top: 24%;
+    width: 120px;
+  }
+
+  .book-layout-3-ele-5 {
+    right: 17%;
+    top: 45%;
+    width: 50px;
+  }
+
+  .book-layout-3-ele-6 {
+    right: 3%;
+    bottom: 30%;
+    width: 150px;
+  }
+
+  .book-layout-3-ele-7 {
+    right: 6%;
+    bottom: 18%;
+    width: 15%;
+    rotate: -20deg;
+  }
+
+  .book-layout-3-ele-8 {
+    left: 5%;
+    top: 3%;
+    width: 17%;
+  }
+
+  .book-layout-3-ele-9 {
+    left: 3%;
+    top: 10%;
+    width: 17%;
+  }
+
+  .book-layout-3-ele-10 {
+    left: 15%;
+    top: -3%;
+    width: 130px;
+  }
+
+  .book-layout-3-ele-11 {
+    left: 12%;
+    top: 40%;
+    width: 11%;
+  }
+
+  .book-layout-3-ele-12 {
+    left: 2%;
+    bottom: 25%;
+    width: 18%;
+  }
+
+  .book-layout-3-ele-13 {
+    left: 8%;
+    bottom: 22%;
+    width: 12%;
+  }
+
+  .book-layout-3-ele-14 {
+    left: 20%;
+    bottom: 17%;
+    width: 70px;
+  }
+
+  .book-layout-3-ele-15 {
+    left: 5%;
+    top: 18%;
+    width: 70px;
+  }
+
+  .book-update {
+    {% comment %} background-color: #cac6bb; {% endcomment %}
+    text-align: center;
+    {% comment %} height: 500px; {% endcomment %}
+    width: auto;
+    max-width: 450px;
+    margin: auto;
+    {% comment %} display: flex;
+    align-items: center;
+    justify-content: center; {% endcomment %}
+  }
+
+  .book-update p {
+    color: var(--text-color);
+    font-size: 26px;
+  }
+
+  .book-update strong {
+    color: black;
+    font-size: 34px;
+    text-transform: capitalize;
+  }
+
+  .book-layout-3 button {
+    margin-top: 35px;
+    font-family: var(--roboto-font);
+    max-width: 230px !important;
+  }
+
+  /* ---- Proceeding Buttons ---- */
+  .proceeding-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    margin-top: 30px;
+  }
+
+  .proceeding-buttons button {
+    border-radius: 100px;
+    padding: 13px 20px 13px !important;
+    border: 2px solid;
+    font-size: 18px;
+    background-color: white;
+    font-weight: 600;
+  }
+
+  .proceeding-buttons form button:nth-child(1) {
+    margin: 0px;
+  }
+
+  .proceeding-buttons .btn-wrapper .proceed-btn {
+    background-color: transparent;
+  }
+
+  .proceeding-buttons button:nth-child(2),
+  .proceeding-buttons button:nth-child(3) {
+    padding-inline: 30px;
+  }
+
+  .proceeding-buttons .button-style {
+    max-width: 230px;
+    font-size: 18px;
+    padding-block: 13px;
+    border: none;
+  }
+
+
+  canvas.first-page-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ---- Flipbook Loader ---- */
+  #loader,
+  #loader-third {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fcf8f5f5;
+    font-size: 30px;
+    color: #000;
+    font-family: "kb-writer";
+  }
+
+  .spinner {
+    display: block !important;
+    border: 6px solid #eee;
+    border-top: 6px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  #flipbook-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 0px;
+    position: relative;
+    padding:10px 0px;
+  }
+
+  #flipbook .page,
+  #flipbook .hard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:#ffffff00;
+  }
+
+  {% comment %} #flipbook .hard {
+    background: #fff !important;
+    color: #000;
+  } {% endcomment %}
+
+  #flipbook .page img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    border-radius: 0px;
+    {% comment %} clip-path: inset(20px 15px 20px 15px); {% endcomment %}
+  }
+
+  .book-layout-1.book-page-layout-2 .book-creation-details .fourth-step-input input {
+    pointer-events: none;
+    box-sizing:border-box;
+  }
+
+  .book-pages {
+    position: relative;
+    margin-top:10px;
+    margin-bottom:30px;
+    overflow:hidden;
+  }
+
+  .book-pages .previous-page {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    background: none;
+    padding: 0;
+  }
+
+  .book-pages .previous-page svg,
+  .book-pages .next-page svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .book-pages .previous-page svg rect,
+  .book-pages .next-page svg rect {
+    fill: none;
+  }
+
+  .book-pages .next-page {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background: none;
+    padding: 0;
+  }
+
+  #book-images {
+    display: none;
+    width: 90%;
+  }
+
+  #book-images img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .book-padding {
+    padding-top: 0px;
+  }
+  #flipbook .shadow {
+      box-shadow: 0 0 15px rgba(0,0,0,0.25);
+      display:block;
+      height:100% !important;
+  }
+  /* ---- Mobile Book Images ---- */
+  @media (max-width: 1024px) {
+       .proceeding-buttons {
+      flex-wrap: wrap;
+      gap:10px;
+    }
+
+    .proceeding-buttons button:nth-child(1) {
+      margin: 0;
+    }
+
+    .book-layout-3-ele-2 {
+      top: 0%;
+    }
+
+    .book-layout-3-ele-9 {
+      top: 5%;
+    }
+        .msg-div {
+      padding-inline: 20px;
+    }
+    #flipbook-container,
+    #prevPage,
+    #nextPage {
+      display: none !important;
+    }
+
+    #book-images {
+      width: 55%;
+      display: flex;
+      overflow-x: auto;
+      margin: auto;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .book-layout-3-ele-10{
+        width:20px;
+    }
+    .proceeding-buttons button{
+    padding: 12px 17px 12px !important;
+    font-size: 16px;
+    line-height: 1;
+    }
+  .book-update p {
+    font-size: 22px;
+  }
+  .book-update strong{
+    font-size: 30px;
+  }
+  .book-layout-1 {
+    padding-top: 20px;
+  }
+     .book-layout-1 img {
+      border-radius: 12px;
+      aspect-ratio: 1.5 / 1;
+      object-fit: cover;
+    }
+
+    .book-creation-details {
+      border-radius: 12px;
+    }
+
+    .book-creation-input-divs {
+      flex-direction: column;
+    }
+
+    .data-input {
+      width: 100% !important;
+    }
+
+    .book-creation-details .button-style {
+      font-size: 18px;
+    }
+    .btn-wrapper {
+      flex-wrap: wrap;
+    }
+
+    #book-images img {
+      aspect-ratio: 1 / 1;
+      object-fit:cover;
+    }
+
+    .book-layout-3-ele-6 {
+      display: none;
+    }
+
+    .msg-div {
+      border-radius: 10px;
+    }
+
+    .blurred-bg,
+    .msg-div-inner {
+      border-radius: 10px;
+    }
+
+    #book-images {
+      width: 100%;
+    }
+
+    #book-images img {
+      border-radius: 0px;
+      padding: 0 0.5rem;
+    }
+  }
+</style>
+
+
+    <!-- BOOK PAGE LAYOUT START -->
+        <div class="book-layout-1 page-width book-section-padding">
+            <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/img-3.jpg?v=1755538934" alt="">
+            <div class="book-creation-details">
+                <div class="book-creation-input-divs">
+                    <div class="data-input">
+                        <label for="name">おこさまの下の名前</label>
+                        <input type="text" id="name" placeholder="ひらがなで入力してください">
+                    </div>
+                    <div class="data-input second-input">
+                        <label for="date">生年月日</label>
+                        <input type="date" id="date">
+                    </div>
+                    <div class="data-input">
+                        <label for="drop">絵本の言語</label>
+                        <div class="book-dropdown-main">
+                            <span>日本語</span>
+                            <svg fill="#e1b245" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M21,21H3L12,3Z"></path></g></svg>
+                            <div class="dropdown-values">
+                                <span>日本語</span>
+                                <span>日本語</span>
+                                <span>日本語</span>
+                                <span>日本語</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="button-style large dark-brown">
+                    <a href="#">メッセージを送りましょう</a>
+                </button>
+            </div>
+        </div>
+
+        <div class="book-layout-1 book-page-layout-2 page-width book-section-padding">
+            <div class="msg-div">
+                <h2>素敵なメッセージを送りましょう</h2>
+                <p class="sub-text">メッセージは自由に編集することができます ! <br />そのままでも送ることができますが <br />特別な言葉を送って上げてください。</p>
+                <div class="predefined_text">
+                    <p>
+                    お好きなメッセージをタイプしてください。<br>
+                    次のテンプレートをご利用ください。<br>
+                    どれをえらんでも、テキストは、削除、変更、付け足しが可能です。<br>
+                    自由テキストは、1行〇〇字以内（改行します）<br>
+                    テキスト全部で、〇〇行以内でおねがいします。
+                    </p>
+                    <div class="pre_select_wrap">
+                        <span>テンプレート選択</span> 
+                        <select id="templateSelect">
+                            <option value="sample" selected>サンプルテンプレート</option>
+                            <option value="1">テンプレート 1</option>
+                            <option value="2">テンプレート 2</option>
+                            <option value="3">テンプレート 3</option>
+                        </select>  
+                    </div>
+                </div>
+                <div class="msg-div-inner">
+                    <p class="msg" id="messageContent">
+                        バースデイ・ブックのせかいへようこそ! <br />
+                        このほんはちいさいけれど、<br />
+                        こどもたちのおたんじょうびを<br />
+                        おいわいしています!<br /><br />
+                        おたんじょうびは<br />
+                        そのひうまれたこどもに<br />
+                        とてもすてきなプレゼントを<br />
+                        してくれます!
+                    </p>
+                    <div class="blurred-bg"></div>
+                </div>
+            </div>
+            <div class="book-creation-details">
+                <div class="book-creation-input-divs">
+                    <div class="data-input">
+                        <label for="name2">おこさまの下の名前</label>
+                        <input type="text" id="name2" placeholder="ひかる" disabled>
+                    </div>
+                    <div class="data-input second-input">
+                        <label for="date2">生年月日</label>
+                        <input type="date" id="date2" disabled>
+                    </div>
+                    <div class="data-input">
+                        <label for="drop">絵本の言語</label>
+                        <input type="text" placeholder="日本語">
+                    </div>
+                </div>
+                <span class="error">メッセージの文字は、 全角145文字となります。</span>
+                <button class="button-style large dark-brown">
+                    <a href="#">試し読みをする</a>
+                </button>
+            </div>
+        </div>
+
+        <div class="book-layout-3-main">
+            <div class="book-layout-3 page-width book-section-padding">
+                <div id="loader-third" style="display: none;">
+                    Loading...
+                </div>
+                <div class="book-update">
+                    <p>
+                        あなたの、<br />
+                        <strong class="jenerik">my birthday book</strong><br />
+                        が出来ました!
+                    </p>
+                </div>
+                <button class="button-style large dark-brown">
+                    <a href="#">OK</a>
+                </button>
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/cloud1.png?v=1755505257" alt="" class="elements book-layout-3-ele-1">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/Leo.png?v=1755956355" alt="" class="elements book-layout-3-ele-2">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star3.png?v=1755505440" alt="" class="elements book-layout-3-ele-3">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star2.png?v=1755505376" alt="" class="elements book-layout-3-ele-4">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star3.png?v=1755505440" alt="" class="elements book-layout-3-ele-5">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/cloud1.png?v=1755505257" alt="" class="elements book-layout-3-ele-6">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/Aquarius.png?v=1755538705" alt="" class="elements book-layout-3-ele-7">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/cloud1.png?v=1755505257" alt="" class="elements book-layout-3-ele-8">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/Virgo.png?v=1755534826" alt="" class="elements book-layout-3-ele-9">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star2.png?v=1755505376" alt="" class="elements book-layout-3-ele-10">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star2.png?v=1755505376" alt="" class="elements book-layout-3-ele-11">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/cloud1.png?v=1755505257" alt="" class="elements book-layout-3-ele-12">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/Rabbit.png?v=1755539169" alt="" class="elements book-layout-3-ele-13">
+                <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star2.png?v=1755505376" alt="" class="elements book-layout-3-ele-14">
+            </div>
+            <img src="https://cdn.shopify.com/s/files/1/0720/3294/4327/files/star2.png?v=1755505376" alt="" class="elements book-layout-3-ele-15">
+        </div>
+
+        <div class="book-layout-1 book-padding book-page-layout-2 page-width book-section-padding">
+            <!-- FLIPBOOK SECTION -->
+            <div class="book-pages">
+                <div id="loader" >
+                    Loading...
+                </div>
+                <div id="flipbook-container" style="display: none;">
+                    <div id="flipbook"></div>
+                </div>
+
+                <button id="prevPage" class="previous-page">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <g id="SVGRepo_iconCarrier"> <rect width="24" height="24" fill="white"/> <path d="M14.5 17L9.5 12L14.5 7" stroke="#543f32" stroke-linecap="round" stroke-linejoin="round"/> </g>
+                    </svg>
+                </button>
+
+                <button id="nextPage" class="next-page">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                    <g id="SVGRepo_iconCarrier"> <rect width="24" height="24" fill="white"/> <path d="M9.5 7L14.5 12L9.5 17" stroke="#543f32" stroke-linecap="round" stroke-linejoin="round"/> </g>
+                    </svg>
+                </button>
+
+            </div>
+
+            <div id="book-images"></div>
+            
+            <div class="book-creation-details">
+                <div class="book-creation-input-divs">
+                    <div class="data-input fourth-step-input">
+                        <label for="name3">おこさまの下の名前</label>
+                        <input type="text" id="name3" placeholder="ひかる">
+                    </div>
+                    <div class="data-input second-input fourth-step-input">
+                        <label for="date3">生年月日</label>
+                        <input type="date" id="date3">
+                    </div>
+                    <div class="data-input fourth-step-input">
+                        <label for="drop">絵本の言語</label>
+                        <input type="text" placeholder="日本語">
+                    </div>
+                </div>
+                <div class="proceeding-buttons">
+                    <button class="proceed-btn">最初からやり直す</button>
+                    <div class="btn-wrapper">
+                    <button class="proceed-btn hard">ハードカバー</button>
+                    <button class="proceed-btn soft">ソフトカバー</button>
+                   {%- render 'buy-buttons',
+                  block: block,
+                  product: product,
+                  product_form_id: product_form_id,
+                  section_id: section.id,
+                  show_pickup_availability: true
+                -%}
+                </div>
+              </div>
+            </div>
+        </div>
+ 
+                {{ 'jquery.js' | asset_url | script_tag }}
+        <!-- Turn.js -->
+          {{ 'turn.js' | asset_url | script_tag }}
+        <!-- PDF.js -->
+        {{ 'cloudfare-ajax-lib.pdf.min.js' | asset_url | script_tag }}
+
+        <!-- jsPDF -->
+        {{ 'cloudfare-ajax-libs-3.0.1.js' | asset_url | script_tag }}
+          {{ 'cloudfare-ajax-libs-pdf-libs.min.js' | asset_url | script_tag }}
+
+  
+<script>
+  document.addEventListener('DOMContentLoaded', function () { 
+      let formData = JSON.parse(localStorage.getItem('bookFormData')) || {
+          name: '',
+          birthdate: '',
+          message: '',
+          bookType: 'ハードカバー'
+      };
+
+      let currentStep = parseInt(localStorage.getItem('bookCurrentStep')) || 1;
+      var pages;
+      var pdfpages;
+      var formattedDate;
+      var editpagedetail = [];
+      var birthdayTraits = [["なにを やりたいか じぶんで わかっている","もくてきの ために とても どりょくする","ルールをまもるのが すき"],["はたらきもの","ともだちを たいせつにする","こうしょうするのが じょうず"],["なかのいい ともだちと あそぶのが すき","いいアイデアが たくさんある","わかわかしい こころの もちぬし"],["ちょうてんを めざす","はたらきもの","たのしいのが すき"],["なんでも じょうずに できる","いいアイデアが たくさんある","ともだちを たすけるのが すき"],["はたらきもの","ともだちを しんじる","ちょうてんを めざす"],["いいアイデアが たくさんある","ともだちと いっしょに あそぶのが すき","えをかいたり、いろを ぬったり するのが すき"],["いちばんに なるのが すき","なにを やりたいか じぶんで わかっている","はたらきもの"],["いま おきていることを しりたいと おもう","ともだちを しんじる","ちょうてんを めざす"],["いそがしく しているのが すき","きちんと じゅんびするのが すき","いいアイデアが たくさんある"],["ひとを たすけるのが すき","いいアイデアが たくさんある","えをかいたり、いろを ぬったり するのが すき"],["ひとを ひきつける","いいアイデアが たくさんある","あたらしい かんがえが できるひと"],["いつも かつどうしている","なにを やりたいか じぶんで わかっている","とても かしこい"],["いちばんに なるのが すき","とても かしこい","ともだちと おしゃべりするのが すき"],["もくひょうを わすれない","えをかいたり、いろを ぬったり するのが すき","いちばんに なるのが すき"],["ともだちを たいせつにする","ともだちと いっしょに あそぶのが すき","とても あたまが いい"],["はたらきもの","いちばんに なるのが すき","なにを やりたいか じぶんで わかっている"],["はたらきもの","あたらしいことを たくさん かんがえている","とても しんせつ"],["あたらしい かんがえが できるひと","ゆかいな ひと","いちばんに なるのが すき"],["あたらしい かんがえが できるひと","はたらきもの","ともだちと あそぶのが だいすき"],["ともだちと はなすのが だいすき","うごくのが すき","たのしいのが すき"],["かしこい","ぼうけんが すき","じぶんの やりかたで やるのが すき"],["かけがえの ないひと","いつも こたえを みつけられる","あたらしい かんがえが できるひと"],["ひとを ひきつける","はたらきもの","たのしいのが すき"],["ひとを ひきつける","あたらしい かんがえが できるひと","すばらしい くうそうりょくが ある"],["はたらきもの","あたらしい ともだちを つくるのが すき","ともだちと あそぶのが だいすき"],["はたらきもの","ともだちが たくさんいる","あたらしい かんがえが すき"],["ぼうけんが すき","いちばんに なるのが すき","あたらしい かんがえが できるひと"],["とても さいのうが ある","ともだちと しゃべるのが すき","ひとを ひきつける"],["リーダーに ふさわしい","おおきな ゆめを もっている","ひとを ひきつける"],["いそがしく しているのが すき","とても かしこい","ひとを ひきつける"],["いいアイデアが たくさんある","かんがえていることを はなす","いそがしく しているのが すき"],["てつだいが すき","ゆたかな くうそうりょくが ある","しんじたものを まもる"],["いいアイデアが たくさんある","ともだちと おしゃべりするのが すき","おもいやりが あって しんせつ"],["いそがしく しているのが すき","ともだちから たよりに される","ぼうけんが すき"],["げんき いっぱい","はしったり、ゲームをするのが すき","べんきょうが すき"],["おもしろいことが だいすき","ともだちと いるのが すき","あたらしい アイデアが すき"],["てつだいが すき","ぼうけんが だいすき","おだやかな こころの もちぬし"],["いそがしく しているのが すき","だれに たいしても おもいやりが ある","つよい こころの もちぬし"],["しんじたものを まもる","びっくりさせるのが すき","ともだちが たくさん いる"],["ともだちを たいせつにする","そっせんして うごくのが すき","いいかんがえを たくさん もっている"],["なにを やりたいか じぶんで わかっている","すてきな みりょくが ある","えをかいたり、いろを ぬったり するのが すき"],["あたらしい ともだちを つくるのが すき","わらうのが すき","うまれながらの り―ダー"],["はたらきもの","とても どりょく する","なみはずれた しゅうちゅうりょくが ある"],["なかのいい ともだちと あそぶのが すき","おおきな ゆめを もっている","かっぱつで ちゃめっけがある"],["あたらしい ともだちを つくるのが すき","ぶんをかいたり、えを かいたり、いろを ぬるのがすき","あかるくて ほがらか"],["おもしろい ミステリーが すき","あるくのが はやい","すばらしいことを おもいつける"],["はたらきもの","しんじたものを まもる","きょうそうするのが すき"],["おおぜいの なかにいても めだつ","よりよいものが つくれる ひと","だれに たいしても おもいやりが ある"],["ひとを ひきつける","ちょうてんを めざす","アートが だいすき"],["うまれつき はなしあいが じょうず","てつだいが すき","ともだちから たよりに される"],["だれでも すぐに ともだちになれる","わらうのが すき","ひとを ひきつける"],["いいアイデアが たくさんある","アートが だいすき","きろくを のこす"],["ともだちと はなすのが だいすき","はなしを きくのが じょうず","アートが だいすき"],["ともだちと はなすのが だいすき","ともだちから たよりに される","ひとを ひきつける"],["おないどしのひとより かしこい","ともだちと おしゃべりするのが すき","とても さいのうが ある"],["はたらきもの","わらうのが すき","だれに たいしても おもいやりが ある"],["ひとを ひきつける","いきいきとした そうぞうりょくが ある","アートが だいすき"],["うまれながらの リーダー","あたらしいことを しるのが すき","まちがいを ただすのが すき"],["うまれつき はなしあいが じょうず","アートが だいすき","だれとでも すぐに ともだちに なれる"],["はたらきもの","あたらしい アイデアに どきどきする","だれに たいしても おもいやりが ある"],["はたらきもの","あいじょう いっぱいの ひと","ひとと つきあうのが じょうず"],["めが きらきらしている","ひとに まけない","すばやくて はっきりしたせいかく"],["はたらきもの","とても かしこい","えをかいたり、いろを ぬったり するのが すき"],["ぼうけんが すき","ともだちと おしゃべりして わらうのが すき","はたらきもの"],["はたらきもの","ともだちの そばにいるのが すき","ひとから すかれる"],["いきいきとした そうぞうりょくが ある","とても かしこい","うつくしいものが だいすきな ひと"],["はたらきもの","いきいきとした そうぞうりょくが ある","ちょうせんするのが すき"],["ともだちを たいせつにする","いきいきとした そうぞうりょくが ある","いろいろなせかいに きょうみが ある"],["ちゅうもくされるのが すき","リーダーに ふさわしい","すばらしい アイデアが たくさんある"],["かしこく うまれた","はたらきもの","だれに たいしても おもいやりが ある"],["すばらしい ともだちに なる","おおらかな せいかく","うまれつき さいのうが ある"],["あかるい えがおの もちぬし","ひとから すかれる","はたらきもの"],["せんけんの めいが ある","ひろいこころの もちぬし","なんでも すぐに やれる"],["ひとから すかれる","こころの おくに つよさがある","えをかいたり、いろを ぬったり するのが すき"],["かしこくて クリエイティブ","ちしきの はばが ひろい","ひとを ひきつける"],["はたらきもの","いきいきとした そうぞうりょくが ある","ともだちを だいじにする"],["しょうらいの ゆめを おもいえがく","いきいきとした そうぞうりょくが ある","じぶんらしい ユーモアの もちぬし"],["ひとを ひきつける","じぶんらしい ユーモアの もちぬし","いきいきとした そうぞうりょくが ある"],["えをかいたり、いろを ぬったり するのが すき","こせいてきな さいのうや のうりょくがある","みんなに きょうりょく できる"],["なんでも やってみる","ひとを ひきつける","まいにちが だいぼうけん"],["はたらきもの","だいたん","たんけんが すき"],["はたらきもの","かんがえたことを じっこうする","ともだちが たくさん いる"],["ひとから すかれる","ひとを ひきつける","ともだちを いえに よぶのが すき"],["ひとから すかれる","いろいろな さいのうがある","やりながら ちしきを みにつける"],["げんき いっぱい","ちょっかんを しんじる","しんじたものを まもる"],["おしが つよい","おそれるものが なにもない","いいかんがえを たくさん もっている"],["うまれながらの リーダー","しんじたものを まもる","ほがらかな ひとがら"],["あいじょう いっぱいの ひと","ゆうきが あって いさましい","みんなに きょうりょく できる"],["ひとを ひきつける","ともだちの せわを するのが すき","ひとから すかれる"],["せんけんの めいが ある","うまれながらの リーダー","ぼうけんが すき"],["ぼうけんが すき","おしが つよい","おそれるものが なにもない"],["こせいてきな さいのうや のうりょくがある","はたらきもの","ぼうけんが すき"],["あたらしい アイデアに どきどきする","ぼうけんが すき","うまれつき はなしあいが じょうず"],["ひとを ひきつける","おしが つよい","はたらきもの"],["ありのままのことを いう","にんきものになる そしつがある","じゆうな こころの もちぬし"],["ひとを ひきつける","ともだちから たよりに される","みんなを ひっぱっていける ひと"],["おしが つよい","かしこくて クリエイティブ","ともだちに ひらめきを あたえるひと"],["おしが つよい","パイオニアせいしんが ある","はたらきもの"],["かんじたことを ことばにできる","パイオニアせいしんが ある","しんじたものを まもる"],["あかるい えがおの もちぬし","ともだちと いっしょに いるのが すき","みるめがある"],["きだてが よい","ともだちから たよりに される","あふれるほどの ねついが ある"],["ほがらかな せいかく","おもしろいことが だいすき","ひとを たのしませるのが すき"],["はたらきもの","リーダーに ふさわしい","しんじたものを まもる"],["はたらきもの","とても かしこい","おしが つよい"],["ひとと つきあうのが じょうず","いつも ただしいことを する","ひとを ひきつける"],["うまれつき はなしあいが じょうず","おそれるものが なにもない","こせいてきな さいのうや のうりょくがある"],["しんじたものを まもる","とても かしこい","せいこうできる じゅんびが できている"],["しんじることの ために たたかう","ともだちと いっしょに いるのが すき","クリエイティブで、のうりょくがあって、よくはたらく"],["はたらきもの","ひとを ひきつける","アイデアを たくさん おもいつくひと"],["なにを やりたいか じぶんで わかっている","もくてきの ために とても どりょくする","おそれるものが なにもない"],["うまれながらの リーダー","ひとを ひきつける","たんけんするのが すき"],["なにを やりたいか じぶんで わかっている","もくてきの ために とても どりょくする","ひとを ひきつける"],["とても かしこい","こせいてきな さいのうや のうりょくがある","いきいきとした そうぞうりょくが ある"],["ゆたかな くらしが すき","うちのひとと いっしょに いるのが すき","クリエイティブで、のうりょくがあって、よくはたらく"],["ちょうせんできる じゅんびが できている","ひとを ひきつける","りょこうが すき"],["ひとを ひきつける","しんじたものを まもる","こまったことを かいけつ できるひと"],["ともだちの せわを するのが すき","アクションが すき","ひとを ひきつける"],["おしが つよい","ともだちの せわを するのが すき","うまれつきの リーダー"],["ちょうせんできる じゅんびが できている","せんけんの めいが ある","ともだちと いっしょに いるのが すき"],["ひとを ひきつける","ともだちと いっしょに いるのが すき","しんじたものを まもる"],["チャンスを にがさない","しんじたものを まもる","かっきに みちている"],["はたらきもの","のぞみを たかくもつ","もんだいを かいけつ できる"],["ひとを ひきつける","だいじに そだてるのが すき","いろいろな さいのうがある"],["ひとと つきあうのが じょうず","なにを やりたいか じぶんで わかっている","ゴールにむかって がんばる"],["かけがえの ないひと","だれに たいしても おもいやりが ある","ききじょうず"],["ひとと つきあうのが じょうず","ともだちと いっしょに いるのが すき","むだづかいを しない"],["ひとを ひきつける","ひととちがう ゆめを えがける","ちしきの はばが ひろい"],["ちゃめっけがある","ユーモアたっぷり","どくとくな かんがえかたが できる"],["はつめいするのが すき","ともだちの せわを するのが すき","ゆうきが ある"],["おしが つよい","ともだちの せわを するのが すき","じぶんから すすんで なにかを はじめられる"],["はたらきもの","ひとを ひきつける","いろいろな さいのうがある"],["ひとを ひきつける","ともだちの せわを するのが すき","ユーモアたっぷり"],["やさしい こころの もちぬし","アートと おんがくが すき","はたらきもの"],["とても クリエイティブ","とても かしこい","アイデアを たくさん おもいつくひと"],["はたらきもの","ひとを ひきつける","ともだちと いっしょに いるのが すき"],["とても かしこくて しんらいされている","たんきゅうしんが ある","おんがくが だいすき"],["ひとを ひきつける","ひとを ひきつけるみりょくが ある","じぶんから すすんで なにかを はじめられる"],["とても かしこい","ひとの きもちが わかる","すばらしい くうそうりょくが ある"],["とても かしこい","ともだちの せわを するのが すき","うまれながらの リーダー"],["ひとを ひきつける","ひとを ひきつけるみりょくが ある","ひととちがう ゆめを えがける"],["はたらきもの","ぼうけんするのが すき","どこでも すぐに なじめる"],["ぱっと きてんが きく","うまれながらの リーダー","はたらきもの"],["ぱっと きてんが きく","あたらしい かんがえが できるひと","ひとより いっぽ ひいでている"],["ひとを ひきつける","みんなで あつまるのが すき","わらうのが すき"],["アートが すき","わらうのが すき","ひととちがう ゆめを えがける"],["はたらきもの","ぱっと きてんが きく","しじを だすのが すき"],["ぼうけんが すき","ひとを ひきつける","わらうのが すき"],["どきどきするのが すき","りょこうするのが すき","いっしょにいると たのしいひと"],["ひとから すかれる","ともだちが たくさん いる","ともだちと はなすのが だいすき"],["ひとと つきあうのが じょうず","わらうのが すき","めまぐるしく うごいている"],["とても かしこい","とても クリエイティブ","ひとをたのしませるのが とくい"],["きてんが きく","あたらしい アイデアに どきどきする","かしこくて せっとくりょくが ある"],["ひとを ひきつける","とても かしこい","うまれつき はなしあいが じょうず"],["ともだちに よく さそわれる","はたらきもの","いつも いそいでいる"],["なにを やりたいか じぶんで わかっている","アイデアを たくさん おもいつくひと","うまれつき はなしあいが じょうず"],["ぱっと きてんが きく","なんにでも きょうみを もつ","ともだちと はなすのが だいすき"],["ひとを ひきつける","なかなおりさせるのが じょうず","ひとから すかれる"],["じぶんで うんをつかむ","あたらしい ともだちを つくるのが すき","いきいきした ひとがら"],["はたらきもの","あたらしい ともだちを つくるのが すき","ちょうせんするのが すき"],["ひとから すかれる","なにを やりたいか じぶんで わかっている","ちしきを きゅうしゅうする"],["いいアイデアを たくさん もっている","ひとを ひきつける","あたらしい ともだちを つくるのが すき"],["とても かしこい","ひらめきを ふくらませるひと","なにかを はじめて やれるひと"],["いつも かつどうしている","もくひょうを たかく もつ","あたらしい ともだちを つくるのが すき"],["はたらきもの","ひととちがう ゆめを えがける","うまれつき はなしあいが じょうず"],["ぱっと きてんが きく","ぼうけんが すき","うまれながらの リーダー"],["ともだちといっしょに いるのが だいすき","ひとを ひきつける","ぱっと きてんが きく"],["ひととちがう ゆめを えがける","だれに たいしても おもいやりが ある","ひらめきを ふくらませるひと"],["おないどしのひとより かしこい","あたらしい アイデアに どきどきする","ともだちが たくさん いる"],["ともだちが たくさん いる","とても かしこい","ぱっと きてんが きく"],["わんぱくで どんなことでも たのしめる","なんでも ねっしんに やる","いっしょにいると たのしいひと"],["ひとを ひきつける","じぶんの ちからを しんじる","ともだちが たくさん いる"],["ぱっと きてんが きく","いきいきとした そうぞうりょくが ある","とても クリエイティブ"],["ひとを ひきつける","うちのひとや ともだちが だいすき","ユーモアたっぷり"],["さきのことを みとおせる","ひらめきを ふくらませるひと","だれに たいしても おもいやりが ある"],["はたらきもの","いえに いるのが すき","うちのひとや ともだちが だいすき"],["おもしろい ミステリーが すき","とても しょうじき","ともだちを たすけるのが すき"],["けいかくするのが すき","さきのことを かんがえる","はたらきもの"],["ともだちと はなすのが だいすき","アイデアが いろいろある","ともだちを たすけるのが すき"],["たのしむことが とてもじょうず","ひととちがう ゆめを えがける","はたらきもの"],["うちのひとや ともだちが だいすき","ぼうけんが すき","はたらきもの"],["ぱっと きてんが きく","アイデアが いろいろある","ものおぼえが とてもいい"],["ぼうけんか","ひらめきを ふくらませるひと","うちのひとや ともだちが だいすき"],["とみを ひきよせる","やさしくて しんせつ","うちのひとや ともだちが だいすき"],["はたらきもの","べんきょうが すき","ひとを ひきるける こせいが ある"],["はたらきもの","なにを やりたいか じぶんで わかっている","おないどしのひとより かしこい"],["はたらきもの","さきのことを かんがえる","しらべものが すき"],["うちのひとや ともだちが だいすき","おおらかな みりょくが ある","ひととちがう ゆめを えがける"],["ひととちがう ゆめを えがける","おもしろい ミステリーが すき","せんとうにたつのが すき"],["こせいてきな ものを つくりだせる","なにを やりたいか じぶんで わかっている","ゴールにむかって がんばる"],["さきのことを かんがえる","ともだちが たくさんいる","プレッシャーにまけない"],["ぱっと きてんが きく","ひととちがう ゆめを えがける","うまれながらの たんけんか"],["はたらきもの","こせいてきな ものを つくりだせる","ともだちを たすけるのが すき"],["ぱっと きてんが きく","ことばえらびが じょうず","わらうのが すき"],["はたらきもの","うちのひとや ともだちが だいすき","こせいてきな ユーモアの もちぬし"],["はたらきもの","りょこうするのが すき","ゴールにむかって がんばる"],["ひとを ひきつける","うちのひとや ともだちが だいすき","はたらきもの"],["ひととちがう ゆめを えがける","べんきょうが すき","おないどしのひとより かしこい"],["せいこうしようと いう かたいけついが ある","ぱっと きてんが きく","わらうのが すき"],["うまれつき はなしあいが じょうず","さきのことを かんがえる","あたらしい かんがえを うけいれられる"],["こせいてきな ユーモアの もちぬし","ものおじしない","ひとに やるきを おこさせるのが じょうず"],["うまれつき はなしあいが じょうず","うちのひとや ともだちが だいすき","しんじたものを まもる"],["ことばえらびが じょうず","こせいてきな ものを つくりだせる","とても かしこい"],["こせいてきな ものを つくりだせる","じぶんのことを しんじている","ほがらかな ひとがら"],["ほがらかな ひとがら","うまれながらの しりたがり","ぼうけんするのが すき"],["リーダーに ふさわしい","あたらしい アイデアに どきどきする","ひとを ひきつける"],["ゆかいな ひと","ともだちを たすけるのが すき","ひととちがう ゆめを えがける"],["ひとから すかれる","じぶんのことを しんじている","ともだちと はなすのが だいすき"],["リーダーに ふさわしい","じぶんのことを しんじている","うちのひとや ともだちが だいすき"],["ぼうけんするのが すき","つかれを しらない","リーダーに ふさわしい"],["ひとから すかれる","リーダーに ふさわしい","うまれつき はなしあいが じょうず"],["おもしろいことが だいすき","ともだちが たくさん いる","さきのことを かんがえる"],["なにを やりたいか じぶんで わかっている","リーダーに ふさわしい","ひととちがう ゆめを えがける"],["リーダーに ふさわしい","ようきな らくてんか","しんじたものを まもる"],["ひとを ひきつける","ぱっと きてんが きく","うちのひとや ともだちが だいすき"],["とても かしこい","ともだちと いっしょに あそぶのが すき","うまれつき はなしあいが じょうず"],["ちゃめっけがある","なにを やりたいか じぶんで わかっている","さきのことを かんがえる"],["はたらきもの","リーダーに ふさわしい","あたまを やわらかくして かんがえる"],["はなしあいが しぜんに できる","うちのひとや ともだちが だいすき","ひととちがう ゆめを えがける"],["さきのことを かんがえる","ひととちがう ゆめを えがける","ともだちが たくさん いる"],["はたらきもの","なにを やりたいか じぶんで わかっている","がんばって いちばんに なる"],["はたらきもの","リーダーに ふさわしい","ともだちが たくさん いる"],["リーダーに ふさわしい","ひとを ひきつける","ぼうけんするのが すき"],["ともだちが たくさん いる","やると きめたら やる","ひととちがう ゆめを えがける"],["ぱっと きてんが きく","はたらきもの","いちどに たくさんのことが できる"],["とても かしこい","リーダーに ふさわしい","ひととちがう ゆめを えがける"],["ほがらかな ひとがら","いきるちからに みちている","ともだちが たくさん いる"],["うちのひとや ともだちが だいすき","なんもんを とくのが すき","ひととちがう ゆめを えがける"],["とても かしこい","さきのことを かんがえる","ひととちがう ゆめを えがける"],["なにを やりたいか じぶんで わかっている","さきのことを かんがえる","おもいやりが あって あいじょうたっぷり"],["リーダーに ふさわしい","こせいてきな ものを つくりだせる","ゆうかんな こころの もちぬし"],["どきどきするのが すき","なんでも やってみる","リーダーに ふさわしい"],["はたらきもの","はなしあいが しぜんに できる","ともだちと はなすのが だいすき"],["ひととちがう ゆめを えがける","ちょうせんするのが すき","ともだちを たすけるのが すき"],["いちどに たくさんのことが できる","あたらしい かんがえを うけいれられる","じょうしきを よくしっている"],["ぱっと きてんが きく","ゆかいな ひと","こせいてきな ものを つくりだせる"],["とても かしこい","ともだちと いっしょに あそぶのが すき","うまれつき はなしあいが じょうず"],["いろいろなせかいに きょうみが ある","とても かしこい","ともだちと はなすのが だいすき"],["どきどきするのが すき","あたたかい せいかく","はたらきもの"],["ともだちを たすけるのが すき","せんけんの めいが ある","はたらきもの"],["ぱっと きてんが きく","ゆかいな ひと","ともだちを たすけるのが すき"],["はたらきもの","リーダーに ふさわしい","なにを やりたいか じぶんで わかっている"],["ぱっと きてんが きく","しんせつな こころの もちぬし","べんきょうが すき"],["ひとから すかれる","ひとを ひきつける","ひととちがう ゆめを えがける"],["こまかい ところに めがとどく","はたらきもの","べんきょうが すき"],["うまれつき はなしあいが じょうず","ともだちが たくさん いる","みんなに きょうりょく できる"],["はたらきもの","ともだちを たすけるのが すき","ほがらかな せいかく"],["ひととちがう ゆめを えがける","ともだちを たすけるのが すき","うまれつき はなしあいが じょうず"],["うちのひとや ともだちが だいすき","こせいてきな ものを つくりだせる","さきのことを かんがえる"],["うちのひとや ともだちが だいすき","ともだちを たすけるのが すき","せんけんの めいが ある"],["しんじたものを まもる","はたらきもの","せんけんの めいが ある"],["こせいてきな ものを つくりだせる","ともだちを たすけるのが すき","パズルが すき"],["おだやかで せわずき","ぼうけんするのが すき","うまれつき はなしあいが じょうず"],["はたらきもの","ぱっと きてんが きく","なにを やりたいか じぶんで わかっている"],["ひとを ひきつける","りかいが はやい","せんけんの めいが ある"],["とても かしこい","ぱっと きてんが きく","ともだちと はなすのが だいすき"],["はたらきもの","こせいてきな ものを つくりだせる","しんじたものを まもる"],["ひとを ひきつける","なんもんを とくのが すき","どきどきするのが すき"],["ともだちを たすけるのが すき","ひととちがう ゆめを えがける","うちのひとや ともだちが だいすき"],["ぱっと きてんが きく","しんせつな こころの もちぬし","べんきょうが すき"],["せんけんの めいが ある","しんせつな こころの もちぬし","しんじたものを まもる"],["ともだちを たすけるのが すき","じりつしている","はたらきもの"],["べんきょうが すき","はたらきもの","ぱっと きてんが きく"],["しんせつな こころの もちぬし","うまれつき はなしあいが じょうず","ぱっと きてんが きく"],["ひととちがう ゆめを えがける","ともだちを たすけるのが すき","しんせつな こころの もちぬし"],["はたらきもの","さきのことを かんがえる","うまれつき はなしあいが じょうず"],["ぱっと きてんが きく","リーダーに ふさわしい","ともだちと はなすのが だいすき"],["こせいてきな ものを つくりだせる","うちのひとや ともだちが だいすき","いろいろなせかいに きょうみが ある"],["ひとを ひきつける","ともだちと あそぶのが すき","ぱっと きてんが きく"],["ひとを ひきつける","うまれつき はなしあいが じょうず","うまれつきの リーダー"],["すいりするのが すき","うまれつき はなしあいが じょうず","ともだちを たすけるのが すき"],["うちのひとや ともだちが だいすき","しんせつな こころの もちぬし","しんじたものを まもる"],["うまれつき はなしあいが じょうず","ひとから すかれる","ひととちがう ゆめを えがける"],["ぱっと きてんが きく","ひととちがう ゆめを えがける","ひとを ひきつける"],["ひとを ひきつける","リーダーに ふさわしい","はたらきもの"],["ともだちが たくさん いる","ほがらかな せいかく","ひととちがう ゆめを えがける"],["ともだちと はなすのが だいすき","ひとを ひきつける","ぱっと きてんが きく"],["いろいろなせかいに きょうみが ある","さきのことを かんがえる","はたらきもの"],["チームで うごくのが すき","いろいろなせかいに きょうみが ある","はたらきもの"],["こせいてきな ものを つくりだせる","ともだちのことが だいすき","はなしあいが しぜんに できる"],["ひとを ひきつける","さきのことを かんがえる","かしこくて クリエイティブ"],["かしこくて クリエイティブ","うまれつき はなしあいが じょうず","こせいてきな ユーモアの もちぬし"],["ともだちと はなすのが だいすき","こせいてきな ものを つくりだせる","すいりするのが すき"],["リーダーに ふさわしい","ひとを ひきつける","こせいてきな ものを つくりだせる"],["はなしあいが しぜんに できる","ひととちがう ゆめを えがける","こせいてきな ユーモアの もちぬし"],["はなしあいが しぜんに できる","ともだちと はなすのが だいすき","ようきな らくてんか"],["なにを やりたいか じぶんで わかっている","がんばって せいこうを てにいれる","リーダーに ふさわしい"],["ひととちがう ゆめを えがける","はなしあいが しぜんに できる","ともだちと はなすのが だいすき"],["ともだちが たくさん いる","うまれつき はなしあいが じょうず","はなしが じょうず"],["ひとを ひきつける","べんきょうが すき","すきなことが たくさんある"],["はたらきもの","はなしあいが しぜんに できる","こせいてきな ものを つくりだせる"],["はなしあいが しぜんに できる","はたらきもの","すいりするのが すき"],["ひとを ひきつける","しんじたものを まもる","ともだちと はなすのが だいすき"],["こせいてきな ものを つくりだせる","ぱっと きてんが きく","たのしむことが とてもじょうず"],["ひとを ひきつける","あたらしい かんがえが できるひと","べんきょうが すき"],["すいりするのが すき","はたらきもの","おしが つよい"],["とても かしこい","ひとから すかれる","ぱっと きてんが きく"],["うまれつき はなしあいが じょうず","こせいてきな ものを つくりだせる","ともだちと はなすのが だいすき"],["なにを やりたいか じぶんで わかっている","がんばって せいこうを てにいれる","ひとを ひきつける"],["はたらきもの","ぱっと きてんが きく","ともだちを たすけるのが すき"],["はたらきもの","ひととちがう ゆめを えがける","おしが つよい"],["なにを やりたいか じぶんで わかっている","がんばって せいこうを てにいれる","ひとから すかれる"],["ひとから すかれる","ぼうけんするのが すき","ともだちと はなすのが だいすき"],["ともだちと はなすのが だいすき","べんきょうが すき","ぱっと きてんが きく"],["しんじたものを まもる","はなしあいが しぜんに できる","ともだちが たくさん いる"],["ぱっと きてんが きく","うちのひとが だいすき","はたらきもの"],["ひとを ひきつける","はなしあいが しぜんに できる","みんなに きょうりょく できる"],["あたらしい アイデアに どきどきする","ユーモアがあって、おもしろい","ともだちと はなすのが だいすき"],["はたらきもの","リーダーに ふさわしい","ひとを ひきつける"],["さきのことを かんがえる","いちばんに なるのが すき","ひとを ひきつける"],["ひとを ひきつける","しんじたものを まもる","みんなに きょうりょく できる"],["はなしあいが しぜんに できる","ひととちがう ゆめを えがける","ともだちを たすけるのが すき"],["リーダーに ふさわしい","すいりするのが すき","しんじたものを まもる"],["もんだいを かいけつ できる","おしが つよい","こせいてきな ものを つくりだせる"],["すばやくて はっきりしたせいかく","あたらしい アイデアに どきどきする","いちばんに なるのが すき"],["ひとを ひきつける","ともだちを たすけるのが すき","すいりするのが すき"],["なにを やりたいか じぶんで わかっている","おもしろいことが だいすき","いちばんに なるのが すき"],["はたらきもの","リーダーに ふさわしい","たのしむことが とてもじょうず"],["ともだちを たすけるのが すき","こせいてきな ものを つくりだせる","とても かしこくて しんらいされている"],["すばやくて はっきりしたせいかく","ひとを ひきつける","ともだちを たすけるのが すき"],["はたらきもの","ともだちと はなすのが だいすき","みりょくてき"],["ゴールにむかって がんばる","はたらきもの","ともだちを たすけるのが すき"],["ちょうせんするのが すき","うちのひとや ともだちが だいすき","どこでも すぐに なじめる"],["リーダーに ふさわしい","なにを やりたいか じぶんで わかっている","がんばって せいこうを てにいれる"],["はなしあいが しぜんに できる","うちのひとが だいすき","リーダーに ふさわしい"],["ほがらかな ひとがら","ともだちと はなすのが だいすき","ともだちと はなすのが だいすき"],["はなしあいが しぜんに できる","かっぱつで ちゃめっけがある","はたらきもの"],["ぼうけんするのが すき","ぱっと きてんが きく","こせいてきな ものを つくりだせる"],["ひととちがう ゆめを えがける","ともだちと はなすのが だいすき","ちょうてんを めざす"],["ひとを ひきつける","ともだちを たすけるのが すき","かっぱつで ちゃめっけがある"],["はたらきもの","ぼうけんするのが すき","ひとを ひきつける"],["こせいてきな ものを つくりだせる","ぱっと きてんが きく","りょこうするのが すき"],["ぼうけんするのが すき","ひとから すかれる","かっぱつで ちゃめっけがある"],["さきのことを かんがえる","えをかいたり、いろを ぬったり するのが すき","ぱっと きてんが きく"],["ひとを ひきつける","ひととちがう ゆめを えがける","りょこうするのが すき"],["ぼうけんするのが すき","ひとを ひきつける","りょこうするのが すき"],["ひとを ひきつける","こせいてきな ものを つくりだせる","せいこうしようと いう かたいけついが ある"],["ひとを ひきつける","べんきょうが すき","ぼうけんするのが すき"],["はたらきもの","せいこうしようと いう かたいけついが ある","ともだちが たくさんいる"],["ひとを ひきつける","ぼうけんするのが すき","おもしろい"],["べんきょうが すき","ぱっと きてんが きく","ともだちと いっしょに あそぶのが すき"],["べんきょうが すき","はたらきもの","かしこくて せっとくりょくが ある"],["はたらきもの","ぱっと きてんが きく","じっくり かんがえる"],["おおきな ゆめが ある","ぱっと きてんが きく","なにかを しながら べつのことを やるのが すき"],["はたらきもの","ぼうけんするのが すき","ともだちが たくさんいる"],["はなしあいが しぜんに できる","ようきな らくてんか","しんじたものを まもる"],["ぱっと きてんが きく","ともだちと はなすのが だいすき","りょこうするのが すき"],["ぼうけんするのが すき","はたらきもの","ちょうせんするのが すき"],["ぼうけんするのが すき","はたらきもの","ようきな らくてんか"],["うちのひとや ともだちが だいすき","はなしあいが しぜんに できる","ぱっと きてんが きく"],["ぼうけんするのが すき","ともだちが たくさんいる","りょこうするのが すき"],["ようきな らくてんか","うまれながらの り―ダー","りょこうするのが すき"],["はたらきもの","すいりするのが すき","ゆうきが あって いさましい"],["ひとから すかれる","こせいてきな ものを つくりだせる","しんじたものを まもる"],["うちのひとや ともだちが だいすき","ようきな らくてんか","はなしあいが しぜんに できる"],["ひとから すかれる","しんじたものを まもる","ちょうてんを めざす"],["しんせつな こころの もちぬし","はたらきもの","ちょうてんを めざす"],["ひとを ひきつける","ひととちがう ゆめを えがける","ともだちと はなすのが だいすき"],["はたらきもの","ひとを ひきつける","はなしあいが しぜんに できる"],["しんじたものを まもる","ぼうけんするのが すき","ともだちと はなすのが だいすき"],["ちょうてんを めざす","ぼうけんするのが すき","ぱっと きてんが きく"],["うちのひとや ともだちが だいすき","おもいやりが あって しんせつ","こせいてきな ものを つくりだせる"],["はたらきもの","リーダーに ふさわしい","しんじたものを まもる"],["とても かしこい","ともだちが たくさんいる","ひとを ひきつける"],["はたらきもの","ゴールにむかって がんばる","ともだちと はなすのが だいすき"],["うちのひとや ともだちが だいすき","こせいてきな ユーモアの もちぬし","ひとを ひきつける"]];
+
+      const sections = document.querySelectorAll('.book-layout-1, .book-layout-3-main');
+      const step1 = sections[0];
+      const step2 = sections[1];
+      const step3 = sections[2];
+      const step4 = sections[3];
+      const defaultMessage = `バースデイ・ブックのせかいへようこそ! <br> このほんはちいさいけれど、<br> こどもたちのおたんじょうびを<br>おいわいしています!<br><br>おたんじょうびは<br>そのひうまれたこどもに<br>とてもすてきなプレゼントを<br>してくれます!`;
+      const nameInput1 = step1?.querySelector('#name');
+      const dateInput1 = step1?.querySelector('#date');
+      const step1Button = step1?.querySelector('.button-style');
+
+      const nameInput2 = step2?.querySelector('#name2');
+      const dateInput2 = step2?.querySelector('#date2');
+      const messageContent = step2?.querySelector('.msg');
+      const errorSpan2 = step2?.querySelector('.error');
+      const step2Button = step2?.querySelector('.button-style');
+
+      const step3Button = step3?.querySelector('.button-style');
+      const step3Loader = step3?.querySelector('#loader-third');
+
+      const proceedingButtons = step4?.querySelector('.proceeding-buttons');
+      const restartButton = proceedingButtons?.querySelector('.proceed-btn:nth-child(1)');
+      const hardcoverButton = proceedingButtons?.querySelector('.hard');
+      const softcoverButton = proceedingButtons?.querySelector('.soft');
+      const addToCartButton = proceedingButtons?.querySelector('.button-style');
+    {% comment %} pre define text script starting point {% endcomment %}
+    const templateSelect = document.getElementById('templateSelect');
+    const messageContents = document.getElementById('messageContent');
+
+    
+
+    const templates = {
+        "1": `うまれてきてくれて、ありがとう。<br>すくすく そだってください。`,
+        "2": `お誕生日おめでとう。<br>すくすくそだってください。`,
+        "3": `そのままのあなたが、すきです。<br>いつまでも あたらしく いてください。`
+    };
+
+    templateSelect.addEventListener('change', function() {
+        const selected = this.value;
+        if(selected === "sample") {
+            messageContents.innerHTML = defaultMessage;
+        } else {
+            messageContents.innerHTML = templates[selected];
+        }
+    });
+    {% comment %} pre define text script ending point {% endcomment %}
+      let generatedZodiacImageUrls = null;
+
+      const westernZodiac = [
+          { sign: "Aries", start: "03-21", end: "04-19" },
+          { sign: "Taurus", start: "04-20", end: "05-20" },
+          { sign: "Gemini", start: "05-21", end: "06-21" },
+          { sign: "Cancer", start: "06-22", end: "07-22" },
+          { sign: "Leo", start: "07-23", end: "08-22" },
+          { sign: "Virgo", start: "08-23", end: "09-22" },
+          { sign: "Libra", start: "09-23", end: "10-23" },
+          { sign: "Scorpio", start: "10-24", end: "11-22" },
+          { sign: "Sagittarius", start: "11-23", end: "12-21" },
+          { sign: "Capricorn", start: "12-22", end: "01-19" },
+          { sign: "Aquarius", start: "01-20", end: "02-18" },
+          { sign: "Pisces", start: "02-19", end: "03-20" }
+      ];
+      // NEW: Function to update date formats based on current formData.birthdate
+      function updateDateFormats() {
+          if (formData.birthdate) {
+              const date = new Date(formData.birthdate);
+
+              const jpDate = new Intl.DateTimeFormat("ja-JP", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+              }).format(date);
+
+              const weekdayKanji = new Intl.DateTimeFormat("ja-JP", {
+                  weekday: "long"
+              }).format(date);
+
+              const weekdayMap = {
+                  "日曜日": "にちようび",
+                  "月曜日": "げつようび",
+                  "火曜日": "かようび",
+                  "水曜日": "すいようび",
+                  "木曜日": "もくようび",
+                  "金曜日": "きんようび",
+                  "土曜日": "どようび"
+              };
+
+              const weekday = weekdayMap[weekdayKanji] || weekdayKanji;
+
+              const year = date.getFullYear() + "年";
+              const month = (date.getMonth() + 1) + "月";
+              const day = date.getDate() + "日";
+
+              formattedDate = `${jpDate} ${weekday}`;
+              monthOnly = `${month}`;
+              dayOnly = `${day}`;
+              yearOnly = `${year}`;
+              fullDateBrackets = `${jpDate}`;
+          } else {
+              // Optional: Reset to undefined/empty if no birthdate
+              formattedDate = undefined;
+              monthOnly = undefined;
+              dayOnly = undefined;
+              yearOnly = undefined;
+              fullDateBrackets = undefined;
+          }
+      }
+      updateDateFormats();
+      const chineseAnimals = ["Monkey", "Rooster", "Dog", "Boar" , "Rat",   "Ox", "Tiger", "Rabbit", "Dragon", "snake", "Horse", "Ram"];
+
+      function getBirthdayNumber(day) {
+          let num = day;
+          while (num > 9) {
+              num = num.toString().split('').reduce((acc, d) => acc + Number(d), 0);
+          }
+          return num;
+      }
+
+      function getWesternZodiac(date) {
+          const month = date.getMonth() + 1;
+          const day = date.getDate();
+          const dateStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+          for (const z of westernZodiac) {
+              const start = z.start;
+              const end = z.end;
+
+              if (z.sign === "Capricorn") {
+                  if (dateStr >= "12-22" || dateStr <= "01-19") {
+                      return z.sign;
+                  }
+              } else {
+                  if (dateStr >= start && dateStr <= end) {
+                      return z.sign;
+                  }
+              }
+          }
+          return null;
+      }
+
+      function getChineseAnimal(year) {
+          const index = (year - 1896) % 12;
+          const adjustedIndex = index < 0 ? index + 12 : index;
+          return chineseAnimals[adjustedIndex];
+      }
+
+      function getElement(year) {
+          const lastDigit = year % 10;
+          if (lastDigit === 4 || lastDigit === 5) return "Wood";
+          if (lastDigit === 6 || lastDigit === 7) return "Fire";
+          if (lastDigit === 8 || lastDigit === 9) return "Earth";
+          if (lastDigit === 0 || lastDigit === 1) return "Metal";
+          if (lastDigit === 2 || lastDigit === 3) return "Water";
+      }
+
+      function generateZodiacBook(dateString) {
+          try {
+              const date = new Date(dateString);
+              const year = date.getFullYear();
+              const day = date.getDate();
+
+              const western = getWesternZodiac(date);
+              const chineseAnimal = getChineseAnimal(year);
+              const element = getElement(year);
+              const birthdayNumber = getBirthdayNumber(day);
+
+              const assetUrl = "https://cdn.shopify.com/s/files/1/0720/3294/4327/files/";
+              pages = [
+                  western ? `${assetUrl}abd_p01_${western}_JPN.jpg` : null,
+                  `${assetUrl}abd_p02_JPN.jpg`,
+                  `${assetUrl}abd_P03_JPN.jpg`,
+                  `${assetUrl}abd_P04_JPN.jpg`,
+                  `${assetUrl}abd_P05_JPN.jpg`,
+                  western ? `${assetUrl}abd_P06_${western}_JPN.jpg` : null,
+                  `${assetUrl}abd_P07_JPN.jpg`,
+                  western ? `${assetUrl}abd_P08_${western}_JPN.jpg` : null,
+                  western ? `${assetUrl}abd_P09_${western}_JPN.jpg` : null,
+                  western ? `${assetUrl}abd_P10_${western}_JPN.jpg` : null,
+                  western ? `${assetUrl}abd_P11_${western}_JPN.jpg` : null,
+                  `${assetUrl}abd_P12_JPN.jpg`,
+                  `${assetUrl}abd_P13_JPN.jpg`,
+                  `${assetUrl}abd_P14_${day < 10 ? `0_${day}` : `${Math.floor(day/10)}_${day%10}`}_JPN.jpg`,
+                  `${assetUrl}abd_P15_${birthdayNumber}_JPN.jpg`,
+                  `${assetUrl}abd_p16_JPN.jpg`,
+                  `${assetUrl}abd_p17_JPN.jpg`,
+                  `${assetUrl}abd_P18_JPN.jpg`,
+                  `${assetUrl}abd_P19_JPN.jpg`,
+                  `${assetUrl}abd_P20_JPN.jpg`,
+                  chineseAnimal ? `${assetUrl}abd_P21_${chineseAnimal}_JPN.jpg` : null,
+                  `${assetUrl}abd_P22_JPN.jpg`,
+                  chineseAnimal ? `${assetUrl}abd_P23_${chineseAnimal}_JPN.jpg` : null,
+                  `${assetUrl}abd_P24_JPN.jpg`,
+                  element ? `${assetUrl}abd_P25_${element}_JPN.jpg` : null,
+                  `${assetUrl}abd_P26_JPN.jpg`,
+                  `${assetUrl}abd_p27_JPN.jpg`,
+                  `${assetUrl}abd_p28_JPN.jpg`,
+              ].filter(page => page !== null);
+              console.log(pages)
+              pdfpages = [
+                  western ? `${assetUrl}pdd_p01-28_${western}.pdf` : null,
+                  `${assetUrl}pdd_p02-27.pdf`,
+                  `${assetUrl}pdd_elephant_body_page.pdf`,
+                  `${assetUrl}pdd_p02_JPN.pdf`,
+                  `${assetUrl}pdd_p03_JPN.pdf`,
+                  `${assetUrl}pdd_P04_JPN.pdf`,
+                  `${assetUrl}pdd_P05_JPN.pdf`,
+                  western ? `${assetUrl}pdd_P06_${western}_JPN.pdf` : null,
+                  `${assetUrl}pdd_P07_JPN.pdf`,
+                  western ? `${assetUrl}pdd_P08_${western}_JPN.pdf` : null,
+                  western ? `${assetUrl}pdd_P09_${western}_JPN.pdf` : null,
+                  western ? `${assetUrl}pdd_P10_${western}_JPN.pdf` : null,
+                  western ? `${assetUrl}pdd_P11_${western}_JPN.pdf` : null,
+                  `${assetUrl}pdd_P12_JPN.pdf`,
+                  `${assetUrl}pdd_P13_JPN.pdf`,
+                  `${assetUrl}pdd_P14_${day < 10 ? `0_${day}` : `${Math.floor(day/10)}_${day%10}`}_JPN.pdf`,
+                  `${assetUrl}pdd_P15_${birthdayNumber}_JPN.pdf`,
+                  `${assetUrl}pdd_p16_JPN.pdf`,
+                  `${assetUrl}pdd_p17_JPN.pdf`,
+                  `${assetUrl}pdd_P18_JPN.pdf`,
+                  `${assetUrl}pdd_P19_JPN.pdf`,
+                  `${assetUrl}pdd_P20_JPN.pdf`,
+                  chineseAnimal ? `${assetUrl}pdd_P21_${chineseAnimal}_JPN.pdf` : null,
+                  `${assetUrl}pdd_P22_JPN.pdf`,
+                  chineseAnimal ? `${assetUrl}pdd_P23_${chineseAnimal}_JPN.pdf` : null,
+                  `${assetUrl}pdd_P24_JPN.pdf`,
+                  element ? `${assetUrl}pdd_P25_${element}_JPN.pdf` : null,
+                  `${assetUrl}pdd_P26_JPN.pdf`,
+                  `${assetUrl}pdd_p27_JPN.pdf`,
+                  `${assetUrl}pdd_elephant_body_page.pdf`,
+              ].filter(page => page !== null);
+
+              inputhiddenarray();
+              return pages;
+
+          } catch (error) {
+              console.error('Error generating zodiac book:', error);
+              throw error;
+          }
+      }
+
+      const bookImagesContainer = document.getElementById("book-images");
+
+      let flipbookInitialized = false;
+      const generatedImages = [];
+      const DPI = 144;
+      let maxWidth = 0;
+      let maxHeight = 0;
+
+      var monthOnly;
+      var dayOnly;
+      var yearOnly;
+      var fullDateBrackets;
+
+      if (formData.birthdate) {
+          const date = new Date(formData.birthdate);
+
+          const jpDate = new Intl.DateTimeFormat("ja-JP", {
+              year: "numeric",
+              month: "long",
+              day: "numeric"
+          }).format(date);
+
+          const weekdayKanji = new Intl.DateTimeFormat("ja-JP", {
+              weekday: "long"
+          }).format(date);
+
+          const weekdayMap = {
+              "日曜日": "にちようび",
+              "月曜日": "げつようび",
+              "火曜日": "かようび",
+              "水曜日": "すいようび",
+              "木曜日": "もくようび",
+              "金曜日": "きんようび",
+              "土曜日": "どようび"
+          };
+
+          const weekday = weekdayMap[weekdayKanji] || weekdayKanji;
+
+          const year = date.getFullYear() + "年";
+          const month = (date.getMonth() + 1) + "月";
+          const day = date.getDate() + "日";
+
+          formattedDate = `${jpDate}${weekday}`;
+          monthOnly = `${month}`;
+          dayOnly = `${day}`;
+          yearOnly = `${year}`;
+          fullDateBrackets = `${jpDate}`;
+      }
+
+      function getDayOfYear(date) {
+          const start = new Date(date.getFullYear(), 0, 0);
+          const diff = date - start;
+          const oneDay = 1000 * 60 * 60 * 24;
+          const dayOfYear = Math.floor(diff / oneDay);
+        const month = date.getMonth(); // 0 = Jan, 1 = Feb
+        const day = date.getDate();          
+        const isLeapYear = (date.getFullYear() % 4 === 0 && date.getFullYear() % 100 !== 0) || (date.getFullYear() % 400 === 0);
+          if (isLeapYear) {
+              return Math.min(dayOfYear - 1, 365);
+          }
+              // NON-LEAP YEAR FIX 👇
+            if (month > 1 || (month === 1 && day > 28)) {
+                return Math.min(dayOfYear, 365);
+            }
+          return Math.min(dayOfYear - 1, 365);
+      }
+
+      const renderPageAsImage = async (imageUrl, pageNum) => {
+          return new Promise((resolve, reject) => {
+              const img = new Image();
+              img.src = imageUrl;
+              img.crossOrigin = "Anonymous";
+
+              img.onload = () => {
+                const canvas = document.createElement("canvas");
+                // Only scale up small images, keep large images at original size
+                let scale = 1;
+                if (img.width < 1000) {
+                    scale = DPI / 72; // Only scale small images
+                }
+                console.log(`Page ${pageNum}: Original ${img.width}x${img.height}, Scale: ${scale}x`);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                maxWidth = Math.max(maxWidth, canvas.width);
+                maxHeight = Math.max(maxHeight, canvas.height);
+
+                const context = canvas.getContext("2d");
+                context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                  switch (pageNum) {
+                      case 1:
+                      context.fillStyle = "rgb(255, 255, 255)";
+                      context.font = `600 60pt 'Zen Maru Gothic', sans-serif`; // Adjust font size for scaling
+                      context.textAlign = 'center';
+                      context.fillText((formData.name || ''), canvas.width / 2, 310);
+                      context.fillText('の', canvas.width / 2, 405);
+                    if (formData.bookType === 'ハードカバー') {
+                      editpagedetail.push({
+                          page: 1,
+                          text: `${formData.name || ''}`,
+                          y: 218,                
+                          fontSize: "59pt",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          textAlign: "right-center",
+                          wrap: false
+                      });
+                      editpagedetail.push({
+                          page: 1,
+                          text: `の`,
+                          y: 288,
+                          fontSize: "59pt",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          textAlign: "right-center",
+                          wrap: false
+                      });
+                    } else {
+                      editpagedetail.push({
+                          page: 1,
+                          text: `${formData.name || ''}`,
+                          y: 150,
+                          fontSize: "54pt",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          textAlign: "right-center",
+                          wrap: false
+                      });                       
+                      editpagedetail.push({
+                          page: 1,
+                          text: `の`,
+                          y: 215,
+                          fontSize: "54pt",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          textAlign: "right-center",
+                          wrap: false
+                      });                       
+                    }
+                      context.font = "600 30pt 'Zen Maru Gothic', sans-serif";
+                      context.textAlign = 'right';
+                      context.textBaseline = "bottom";
+                      context.fillText(formattedDate || '', canvas.width - 140, canvas.height - 100);
+                     if (formData.bookType === 'ハードカバー') {
+                      editpagedetail.push({
+                          page: 1,
+                          text: formattedDate || '',
+                          x: 1000,
+                          y: 640,
+                          fontSize: "23px",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          wrap: false
+                      });                        
+                     } else {   
+                      editpagedetail.push({
+                          page: 1,
+                          text: formattedDate || '',
+                          x: 925,
+                          y: 550,
+                          fontSize: "22px",
+                          fontWeight: "bold",
+                          color: "cmyk(0 , 0 , 0 , 0)",
+                          wrap: false
+                      });
+                    }
+    
+                      break;
+                      case 3:
+                          let p3msg1 = formData.message || '';
+                          p3msg1 = p3msg1.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+
+                          function wrapTextCenter(context, text, x, y, maxWidth, lineHeight) {
+                              const lines = text.split(/\n/);
+                              lines.forEach(lineText => {
+                                  let words = lineText.split(/\s+/);
+                                  let line = '';
+
+                                  for (let n = 0; n < words.length; n++) {
+                                      let testLine = line + words[n] + ' ';
+                                      let testWidth = context.measureText(testLine).width;
+
+                                      if (testWidth > maxWidth && line !== '') {
+                                          context.fillText(line, x, y);
+                                          line = words[n] + ' ';
+                                          y += lineHeight;
+                                      } else {
+                                          line = testLine;
+                                      }
+                                  }
+
+                                  if (line.trim() !== '') {
+                                      context.fillText(line.trim(), x, y);
+                                      y += lineHeight;
+                                  }
+                              });
+                          }
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.textAlign = "left";
+                          context.textBaseline = "top";
+                          context.font = "29pt 'Noto Sans JP', sans-serif";
+                          const p3startY = 170;
+                          const p3maxWidth = canvas.width * 0.60;
+                          const p3startX = 200
+                          const p3lineHeight = 55;
+
+                          wrapTextCenter(context, p3msg1, p3startX, p3startY, p3maxWidth, p3lineHeight);
+
+                          editpagedetail.push({
+                              page: 5, 
+                              text: p3msg1,
+                              y: 120,
+                              x:80,
+                              fontSize: "20.45pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "left",
+                              maxWidth: 1173.7,
+                              lineHeight: 15,
+                              wrap: true
+                          });
+                          break;
+                      case 4:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "45pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'へ', canvas.width / 2, 420);
+
+                          editpagedetail.push({
+                              page: 6, 
+                              text: `${formData.name || ''} へ`,
+                              y: 200,
+                              fontSize: "26pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+
+                          let msg1 = defaultMessage || '';
+                          msg1 = msg1.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+
+                          function wrapTextCenter(context, text, x, y, maxWidth, lineHeight) {
+                              const lines = text.split(/\n/);
+                              lines.forEach(lineText => {
+                                  let words = lineText.split(/\s+/);
+                                  let line = '';
+
+                                  for (let n = 0; n < words.length; n++) {
+                                      let testLine = line + words[n] + ' ';
+                                      let testWidth = context.measureText(testLine).width;
+
+                                      if (testWidth > maxWidth && line !== '') {
+                                          context.fillText(line, x, y);
+                                          line = words[n] + ' ';
+                                          y += lineHeight;
+                                      } else {
+                                          line = testLine;
+                                      }
+                                  }
+
+                                  if (line.trim() !== '') {
+                                      context.fillText(line.trim(), x, y);
+                                      y += lineHeight;
+                                  }
+                              });
+                          }
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.textAlign = "center";
+                          context.textBaseline = "top";
+                          context.font = "29pt 'Noto Sans JP', sans-serif";
+                          const canvasCenterX = canvas.width / 2;
+                          const startY = 500;
+                          const maxWidth = canvas.width * 0.60;
+                          const lineHeight = 55;
+
+                          wrapTextCenter(context, msg1, canvasCenterX, startY, maxWidth, lineHeight);
+
+                          editpagedetail.push({
+                              page: 6, 
+                              text: msg1,
+                              y: 250,
+                              fontSize: "14pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              maxWidth: 1123.7,
+                              lineHeight: 12,
+                              wrap: true
+                          });
+                          break;
+
+                      case 5:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "35pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'の', canvas.width / 2, 355);
+
+                          editpagedetail.push({
+                              page: 7, 
+                              text: `${formData.name || ''} の`,
+                              y: 175,
+                              fontSize: "15pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "500 42pt 'Noto Sans JP', sans-serif";
+                          context.fillText(formattedDate || '', canvas.width / 2, 540);
+
+                          editpagedetail.push({
+                              page: 7, 
+                              text: formattedDate || '',
+                              y: 260,
+                              fontSize: "25pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+                          break;
+
+                      case 8:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "32pt 'Noto Sans JP', sans-serif";
+                          context.textBaseline = "bottom";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'が', canvas.width / 2, canvas.height - 190);
+
+                          editpagedetail.push({
+                              page: 10, 
+                              text: `${formData.name || ''} が`,
+                              y: 518,
+                              fontSize: "15pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+                          break;
+
+                      case 12:
+                          context.save();
+                          context.translate(canvas.width / 2, 670);
+                          context.rotate(-Math.PI / 10);
+                          context.fillStyle = "rgb(50, 50, 50)";
+                          context.font = "48pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = "center";
+                          context.fillText(monthOnly, 0, 0);
+                          context.restore();
+
+                          editpagedetail.push({
+                              page: 14, 
+                              text: monthOnly,
+                              y: 320,
+                              fontSize: "35pt",
+                              fontWeight: "400",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              rotation: 0.3499658503988659,
+                              wrap: false
+                          });
+
+                          context.save();
+                          context.translate((canvas.width / 2) + 40, 840);
+                          context.rotate(-Math.PI / 10);
+                          context.fillStyle = "rgb(50, 50, 50)";
+                          context.font = "80pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = "center";
+                          context.fillText(dayOnly, 0, 0);
+                          context.restore();
+
+                          editpagedetail.push({
+                              page: 14, 
+                              text: dayOnly,
+                              x: 280,
+                              y: 395,
+                              fontSize: "50pt",
+                              fontWeight: "400",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              rotation: 0.3490658503988659,
+                              wrap: false
+                          });
+                          break;
+
+                      case 13:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "50pt 'Noto Sans JP', sans-serif";
+                          context.textBaseline = "bottom";
+                          context.textAlign = "center";
+                          context.fillText(fullDateBrackets || '', canvas.width / 2, canvas.height - 220);
+
+                          editpagedetail.push({
+                              page: 15,
+                              text: fullDateBrackets || '',
+                              y: 530,
+                              fontSize: "30pt",
+                              fontWeight: "400",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+
+                          const birthdate = new Date(formData.birthdate);
+                          const dayIndex = getDayOfYear(birthdate);
+                          const traits = (birthdayTraits && birthdayTraits[dayIndex]) ? birthdayTraits[dayIndex] : ["", "", ""];
+
+                          context.save();
+                          context.translate((canvas.width / 2), 250);
+                          context.rotate(-Math.PI / 17);
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "32pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'center';
+                          context.fillText(traits[0], 0, 0);
+                          context.restore();
+
+                          editpagedetail.push({
+                              page: 15,
+                              text: `${formData.name || ''} は ${traits[0]}`,
+                              y: 115,
+                              fontSize: "17px",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              rotation: 0.1780236,
+                              wrap: false
+                          });
+
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "32pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'center';
+                          context.fillText(traits[1], (canvas.width / 2), 490);
+
+                          editpagedetail.push({
+                              page: 15,
+                              text: traits[1],
+                              y: 223,
+                              fontSize: "17px",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+
+                          context.save();
+                          context.translate((canvas.width / 2), 765);
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "32pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'center';
+                          context.rotate(-Math.PI / 28);
+                          context.fillText(traits[2], 0, 0);
+                          context.restore();
+
+                          editpagedetail.push({
+                              page: 15,
+                              text: traits[2],
+                              y: 350,
+                              fontSize: "17px",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              rotation: 0.10472,
+                              textAlign: "center",
+                              wrap: false
+                          });
+                          break;
+
+                      case 23:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "30pt 'Noto Sans JP', sans-serif";
+                          context.textBaseline = "bottom";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'は', canvas.width / 2, canvas.height - 310);
+
+                          editpagedetail.push({
+                              page: 25,
+                              text: `${formData.name || ''} は`,
+                              y: 460,
+                              fontSize: "16pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+                          break;
+
+                      case 24:
+                          context.fillStyle = "rgb(0, 0, 0)";
+                          context.font = "30pt 'Noto Sans JP', sans-serif";
+                          context.textBaseline = "bottom";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'の', canvas.width / 2, canvas.height - 155);
+
+                          editpagedetail.push({
+                              page: 26,
+                              text: `${formData.name || ''} の`,
+                              y: 538,
+                              fontSize: "16pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 1)",
+                              textAlign: "center",
+                              wrap: false
+                          });
+                          break;
+
+                      case 26:
+                          context.fillStyle = "rgb(255, 255, 255)";
+                          context.font = "30pt 'Noto Sans JP', sans-serif";
+                          context.textAlign = 'left';
+                          context.fillText((formData.name || '') + 'は', 700, 535);
+
+                          editpagedetail.push({
+                              page: 28,
+                              text: `${formData.name || ''} は`,
+                              x: 320,
+                              y: 248,
+                              fontSize: "16pt",
+                              fontWeight: "500",
+                              color: "cmyk(0 , 0 , 0 , 0)",
+                              wrap: false
+                          });
+                          break;
+
+                      case 27:
+                          context.fillStyle = "rgb(255, 255, 254)";
+                          context.font = "600 30pt 'Zen Maru Gothic', sans-serif";
+                          context.textAlign = 'center';
+                          context.fillText((formData.name || '') + 'は', canvas.width / 2, 445);
+                        if (formData.bookType === 'ハードカバー') {
+                            editpagedetail.push({
+                            page: 29,
+                            text: `${formData.name || ''} は`,
+                            y: 225,
+                            fontSize: "18px",
+                            fontWeight: "500",
+                            color: "cmyk(0 , 0 , 0 , 0)",
+                            textAlign: "center",
+                            wrap: false
+                            });                            
+                        }    
+                        else{                            
+                            editpagedetail.push({
+                            page: 2,
+                            text: `${formData.name || ''} は`,
+                            y: 222,
+                            fontSize: "18px",
+                            fontWeight: "500",
+                            color: "cmyk(0 , 0 , 0 , 0)",
+                            textAlign: "right-center",
+                            wrap: false
+                            });   
+                        }
+                          break;
+                  }
+
+                  const imgDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+                  generatedImages.push({
+                      url: imgDataUrl,
+                      pxWidth: canvas.width,
+                      pxHeight: canvas.height
+                  });
+
+                  resolve({ imgDataUrl });
+              };
+
+              img.onerror = () => {
+                  console.error(`Failed to load image: ${imageUrl}`);
+                  reject(new Error(`Failed to load image: ${imageUrl}`));
+              };
+          });
+      };
+
+        const loadPDFAsFlipbook = async () => {
+            const flipbook = document.getElementById("flipbook");
+            const loader = document.getElementById("loader");
+            const flipbookContainer = document.getElementById("flipbook-container");
+            const form = document.querySelector('[data-type="add-to-cart-form"]');
+
+            if (!flipbook || !loader || !flipbookContainer || !form) return;
+
+            try {
+                loader.style.display = "flex";
+                flipbookContainer.style.display = "none";
+
+                if ($('#flipbook').data('turn')) {
+                    $('#flipbook').turn('destroy').off();
+                }
+
+                if (formData.birthdate && !generatedZodiacImageUrls) {
+                    generatedZodiacImageUrls = generateZodiacBook(formData.birthdate);
+                }
+
+                const imageUrls = generatedZodiacImageUrls;
+
+                generatedImages.length = 0;
+                maxWidth = 0;
+                maxHeight = 0;
+
+                const pageData = [];
+                for (let i = 0; i < imageUrls.length; i++) {
+                    const page = await renderPageAsImage(imageUrls[i], i + 1);
+                    pageData.push(page);
+                }
+                // ADD THIS CODE RIGHT HERE - PDF SIZE ANALYSIS
+                console.log('🔍 ANALYZING PDF PAGE SIZES:');
+                let totalSize = 0;
+
+                pageData.forEach((page, index) => {
+                    const base64Length = page.imgDataUrl.length - 'data:image/jpeg;base64,'.length;
+                    const pageSizeBytes = (base64Length * 3) / 4;
+                    const pageSizeMB = pageSizeBytes / 1024 / 1024;
+                    totalSize += pageSizeBytes;
+                    
+                    console.log(`📄 Page ${index + 1}: ${pageSizeMB.toFixed(2)} MB`);
+                });
+
+                console.log(`📊 TOTAL ESTIMATED SIZE: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+                // END OF ADDED CODE
+                // NEW: Generate multi-page PDF from images and create Blob
+                const { jsPDF } = window.jspdf; // Access jsPDF from the loaded library
+                if (!jsPDF) {
+                    console.error('jsPDF library is not loaded. Please ensure the script tag is included.');
+                    throw new Error('jsPDF library not loaded');
+                }
+
+                try {
+                    console.log("max-width",maxWidth)
+                    console.log("max-height",maxHeight)
+                    const doc = new jsPDF({
+                        orientation: 2000 > 2000 ? 'landscape' : 'portrait',
+                        unit: 'pt',
+                        format: [2000 / 2, 2000 / 2] // Convert px (at 144 DPI) to pt
+                    });
+
+                    pageData.forEach((page, index) => {
+                        if (index > 0) {
+                            doc.addPage([2000 / 2, 2000 / 2]); // Add new page for subsequent images
+                        }
+                        doc.addImage(page.imgDataUrl, 'JPEG', 0, 0, 2000 / 2, 2000 / 2); // Fill the page with the image
+                    });
+
+                    // Replace the section in loadPDFAsFlipbook after PDF generation (starting from the reader.onloadend block)
+                    const pdfBlob = doc.output('blob'); // Generate Blob
+                    console.log('Generated PDF Blob:', pdfBlob); // Log the Blob object
+                    console.log('Blob Details:', {
+                        size: pdfBlob.size, // Size in bytes
+                        type: pdfBlob.type // Should be 'application/pdf'
+                    });
+
+                    // Create a File object from the Blob
+                    const file = new File([pdfBlob], "generated_book.pdf", { type: 'application/pdf' });
+
+                    // Create a file input element
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.name = 'properties[_Book Previewer]';
+                    fileInput.required = true;
+                    fileInput.id = 'pdffileinput';
+
+                    // Use DataTransfer to simulate file selection
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // Append the file input to the add-to-cart form
+                    const targetForm = document.querySelector('[data-type="add-to-cart-form"]');
+                    if (targetForm) {
+                        // Remove any existing file input with the same name to avoid duplicates
+                        const existingFileInput = targetForm.querySelector('input[name="properties[_Book Previewer]"]');
+                        if (existingFileInput) {
+                            existingFileInput.remove();
+                        }
+                        targetForm.appendChild(fileInput);
+                        console.log('PDF file input appended to add-to-cart form');
+                    } else {
+                        console.error('Add-to-cart form not found');
+                    }
+                  
+                } catch (error) {
+                    console.error('Error generating PDF:', error);
+                    throw error;
+                }
+
+                flipbook.innerHTML = "";
+                bookImagesContainer.innerHTML = "";
+
+                const frontCover = document.createElement("div");
+                frontCover.classList.add(formData.bookType === 'ハードカバー' ? "hard" : "page");
+                frontCover.innerHTML = `<img src="${pageData[0].imgDataUrl}" style="width: 100%; height: 100%;" />`;
+                bookImagesContainer.innerHTML += `<img src="${pageData[0].imgDataUrl}" />`;
+                flipbook.appendChild(frontCover);
+
+                for (let i = 1; i < pageData.length - 1; i++) {
+                    const pageDiv = document.createElement("div");
+                    pageDiv.classList.add("page");
+                    pageDiv.innerHTML = `<img src="${pageData[i].imgDataUrl}" style="width: 100%; height: 100%;" />`;
+                    bookImagesContainer.innerHTML += `<img src="${pageData[i].imgDataUrl}" />`;
+                    flipbook.appendChild(pageDiv);
+                }
+
+                const backCover = document.createElement("div");
+                backCover.classList.add(formData.bookType === 'ハードカバー' ? "hard" : "page");
+                backCover.innerHTML = `<img src="${pageData[pageData.length - 1].imgDataUrl}" style="width: 100%; height: 100%;" />`;
+                bookImagesContainer.innerHTML += `<img src="${pageData[pageData.length - 1].imgDataUrl}" />`;
+                flipbook.appendChild(backCover);
+
+                await new Promise(r => setTimeout(r, 0));
+
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+                const bookW = maxWidth * 2;
+                const bookH = maxHeight;
+                const scale = Math.min(screenW / bookW, screenH / bookH) * 0.95;
+
+                $('#flipbook').turn({
+                    width: 854,
+                    height: 427,
+                    pages: pageData.length,
+                    autoCenter: true,
+                    elevation: 200,
+                    gradients: true,
+                    acceleration: true,
+                    when: {
+                        turning: () => document.body.style.cursor = "default",
+                        turned: () => document.body.style.cursor = "default"
+                    }
+                });
+
+                [...flipbook.children].forEach(child => {
+                    child.style.width = `427px`;
+                    child.style.height = `427px`;
+                });
+
+                loader.style.display = "none";
+                flipbookContainer.style.display = "flex";
+                $("#prevPage").click(function() {
+                    $("#flipbook").turn("previous");
+                });
+
+                $("#nextPage").click(function() {
+                    $("#flipbook").turn("next");
+                });
+                inputhiddeneditpagedetail();
+
+            } catch (err) {
+                console.error("Error loading flipbook:", err);
+                loader.style.display = "none";
+            }
+        };
+      const displayFirstPageInStep3 = async () => {
+          const bookUpdateDiv = step3?.querySelector('.book-update');
+          if (!bookUpdateDiv || !step3Loader) return;
+
+          try {
+              step3Loader.style.display = "flex";
+
+              if (formData.birthdate && !generatedZodiacImageUrls) {
+                  generatedZodiacImageUrls = generateZodiacBook(formData.birthdate);
+              }
+
+              const imageUrl = generatedZodiacImageUrls[0];
+
+              const img = new Image();
+              img.src = imageUrl;
+              img.crossOrigin = "Anonymous";
+
+              await new Promise((resolve, reject) => {
+                  img.onload = () => {
+                      const scale = 0.7;
+                      // No cropping for Step 3
+                      const canvas = document.createElement("canvas");
+                      canvas.width = img.width * scale;
+                      canvas.height = img.height * scale;
+                      const ctx = canvas.getContext("2d");
+                      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                      ctx.fillStyle = "rgb(255,255,255)";
+                      ctx.textAlign = 'center';
+                      ctx.font = "600 30px 'Noto Sans JP', sans-serif";
+                      ctx.fillText((formData.name), canvas.width / 2, 101);
+                      ctx.fillText('の', canvas.width / 2, 136);
+
+                      ctx.fillStyle = "rgb(255,255,255)";
+                      ctx.font = "600 14px 'Noto Sans JP', sans-serif";
+                      ctx.textBaseline = "bottom";
+                      ctx.textAlign = "right";
+                      ctx.fillText(formattedDate || '', canvas.width - 50, canvas.height - 20);
+
+                      const existingImage = bookUpdateDiv.querySelector('.first-page-preview');
+                      if (existingImage) {
+                          existingImage.remove();
+                      }
+
+                      canvas.classList.add('first-page-preview');
+                      bookUpdateDiv.appendChild(canvas);
+
+                      step3Loader.style.display = "none";
+                      resolve();
+                  };
+
+                  img.onerror = () => {
+                      console.error(`Failed to load image: ${imageUrl}`);
+                      reject(new Error(`Failed to load image: ${imageUrl}`));
+                  };
+              });
+
+          } catch (err) {
+              console.error("Error loading first page for step 3:", err);
+              step3Loader.style.display = "none";
+          }
+      };
+
+      window.editBook = function() {
+          showStep(1);
+      };
+
+      async function regenerateZodiacImages() {
+          if (formData.birthdate) {
+              generatedZodiacImageUrls = null;
+              try {
+                  generatedZodiacImageUrls = generateZodiacBook(formData.birthdate);
+                  console.log('New zodiac images generated');
+              } catch (error) {
+                  console.error('Error regenerating zodiac images:', error);
+              }
+          }
+      }
+
+      function countMessageCharacters(htmlMessage) {
+          const plainText = htmlMessage.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+          return plainText.length;
+      }
+
+      function isJapanese(str) {
+          return /^[\u3000-\u30FF\u4E00-\u9FFF\uFF00-\uFFEF0-9\sー・「」、。！？ぁ-んァ-ン一-龯]*$/.test(str);
+      }
+
+      function showError(errorElement, message) {
+          if (errorElement) {
+              errorElement.textContent = message;
+              errorElement.style.display = 'block';
+              errorElement.style.color = 'red';
+          }
+      }
+
+      function hideError(errorElement) {
+          if (errorElement) {
+              errorElement.style.display = 'none';
+          }
+      }
+
+      function createErrorElement(container) {
+          let errorElement = container.querySelector('.error');
+          if (!errorElement) {
+              errorElement = document.createElement('span');
+              errorElement.className = 'error';
+              errorElement.style.cssText = `
+                  display: none;
+                  color: red;
+                  font-size: 14px;
+                  margin-top: 10px;
+                  font-weight: 500;
+              `;
+
+              const inputDivs = container.querySelector('.book-creation-input-divs');
+              const button = container.querySelector('.button-style, .proceeding-buttons');
+
+              if (inputDivs && button) {
+                  container.insertBefore(errorElement, button);
+              } else {
+                  container.appendChild(errorElement);
+              }
+          }
+          return errorElement;
+      }
+
+      function updateBookTypeButtons() {
+          if (!hardcoverButton || !softcoverButton) return;
+
+          hardcoverButton.classList.remove('active');
+          softcoverButton.classList.remove('active');
+
+          hardcoverButton.style.backgroundColor = '';
+          hardcoverButton.style.color = '';
+          softcoverButton.style.backgroundColor = '';
+          softcoverButton.style.color = '';
+
+          if (formData.bookType === 'ハードカバー') {
+              hardcoverButton.classList.add('active');
+              hardcoverButton.style.backgroundColor = '#f2a905';
+              hardcoverButton.style.color = '#fff';
+          } else if (formData.bookType === 'ソフトカバー') {
+              softcoverButton.classList.add('active');
+              softcoverButton.style.backgroundColor = '#f2a905';
+              softcoverButton.style.color = '#fff';
+          }
+          updateFormInputs();
+      }
+
+      function showStep(stepNumber) {
+          sections.forEach(section => {
+              section.style.display = 'none';
+          });
+
+          switch(stepNumber) {
+              case 1:
+                  step1.style.display = 'block';
+                  restoreStep1Data();
+                  break;
+              case 2:
+                  if (step2) {
+                      step2.style.display = 'block';
+                      updateStep2();
+                  }
+                  break;
+              case 3:
+                  if (step3) {
+                      step3.style.display = 'block';
+                      setTimeout(() => {
+                          displayFirstPageInStep3();
+                      }, 100);
+                  }
+                  break;
+              case 4:
+                  if (step4) {
+                      step4.style.display = 'block';
+                      updateStep4();
+                      updateBookTypeButtons();
+                      if (!flipbookInitialized) {
+                          setTimeout(() => {
+                              loadPDFAsFlipbook();
+                              flipbookInitialized = true;
+                          }, 500);
+                      }
+                  }
+                  break;
+          }
+
+          currentStep = stepNumber;
+          saveCurrentStep();
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function restoreStep1Data() {
+          if (nameInput1 && formData.name) {
+              nameInput1.value = formData.name;
+          }
+          if (dateInput1 && formData.birthdate) {
+              dateInput1.value = formData.birthdate;
+          }
+      }
+
+      function updateStep2() {
+          if (errorSpan2) {
+              errorSpan2.style.display = 'none';
+          }
+
+          if (nameInput2) nameInput2.value = formData.name;
+          if (dateInput2) dateInput2.value = formData.birthdate;
+
+
+
+          if (messageContent) {
+              if (formData.message) {
+                  messageContent.innerHTML = formData.message;
+              } else {
+                messageContent.innerHTML = defaultMessage;
+                formData.message = defaultMessage;
+                saveFormData();
+              }
+
+                // Press Enter → insert <br> instead of <div>/<p>
+                messageContent.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                    e.preventDefault();
+                    document.execCommand("insertHTML", false, "<br>");
+                    }
+                });
+
+                // Clean paste → only text + <br>
+                messageContent.addEventListener("paste", (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+                    document.execCommand("insertHTML", false, text.replace(/\n/g, "<br>"));
+                });
+
+                // Auto add <br> after "。"
+                messageContent.addEventListener("input", () => {
+                    let html = messageContent.innerHTML;
+
+                    // Replace unwanted tags
+                    html = html
+                    .replace(/<\/?div[^>]*>/gi, "<br>")
+                    .replace(/<\/?p[^>]*>/gi, "")
+                    {% comment %} .replace(/(<br\s*\/?>\s*){2,}/gi, "<br>"); {% endcomment %}
+
+                    // Add <br> after 。 (only if not already followed by <br>)
+                    html = html.replace(/。(?!<br>)/g, "。<br>");
+
+                    // Update if content changed
+                    if (messageContent.innerHTML !== html) {
+                    const selection = window.getSelection();
+                    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+
+                    messageContent.innerHTML = html;
+
+                    // Try to restore cursor position
+                    if (range) {
+                        selection.removeAllRanges();
+                        const newRange = document.createRange();
+                        newRange.setStart(
+                        messageContent.childNodes[messageContent.childNodes.length - 1] || messageContent,
+                        1
+                        );
+                        selection.addRange(newRange);
+                    }
+                    }
+                });
+
+
+              messageContent.contentEditable = true;
+              messageContent.style.outline = 'none';
+              messageContent.style.border = '2px dashed rgba(255,255,255,0.5)';
+              messageContent.style.padding = '10px';
+              messageContent.style.borderRadius = '8px';
+              
+              messageContent.addEventListener('focus', function() {
+                  if (messageContent.innerHTML.trim() === '') {
+                      messageContent.innerHTML = '';
+                  }
+              });
+
+              messageContent.addEventListener('input', function() {
+                  formData.message = messageContent.innerHTML;
+                  saveFormData();
+                  flipbookInitialized = false;
+              });
+          }
+      }
+
+      function updateStep4() {
+          if (step4) {
+              const nameInput4 = step4.querySelector('#name3');
+              const dateInput4 = step4.querySelector('#date3');
+
+              if (nameInput4) {
+                  nameInput4.value = formData.name;
+              }
+
+              if (dateInput4) {
+                  dateInput4.value = formData.birthdate;
+              }
+          }
+      }
+
+      function saveFormData() {
+          localStorage.setItem('bookFormData', JSON.stringify(formData));
+      }
+
+      function saveCurrentStep() {
+          localStorage.setItem('bookCurrentStep', currentStep.toString());
+      }
+
+      function validateStep1() {
+          const name = nameInput1?.value?.trim() || '';
+          const date = dateInput1?.value || '';
+
+          const errorElement = createErrorElement(step1.querySelector('.book-creation-details'));
+
+          if (!name) {
+              showError(errorElement, '名前を入力してください。');
+              return false;
+          }
+
+          if (!isJapanese(name)) {
+              showError(errorElement, 'ひらがな／漢字／カタカナのみを使用してください。特殊記号は不可です。');
+              return false;
+          }
+          if (name.length > 10) {
+              showError(errorElement, '10文字以上は入力できません。');
+              return false;
+          }
+
+          if (!date) {
+              showError(errorElement, '生年月日を選択してください。');
+              return false;
+          }
+
+          formData.name = name;
+          formData.birthdate = date;
+          saveFormData();
+
+          hideError(errorElement);
+          return true;
+      }
+
+      function validateStep2() {
+          const name = nameInput2?.value?.trim() || '';
+          const date = dateInput2?.value || '';
+          const message = messageContent?.innerHTML?.trim() || '';
+
+          if (!name) {
+              showError(errorSpan2, '名前を入力してください。');
+              return false;
+          }
+
+          if (!isJapanese(name)) {
+              showError(errorSpan2, 'ひらがな／漢字／カタカナのみを使用してください。');
+              return false;
+          }
+
+          if (!date) {
+              showError(errorSpan2, '生年月日を選択してください。');
+              return false;
+          }
+
+          if (!message || message === '<br>' || message === '') {
+              showError(errorSpan2, 'メッセージを入力してください。');
+              return false;
+          }
+
+          const characterCount = countMessageCharacters(message);
+          console.log(characterCount)
+          if (characterCount > 145) {
+              showError(errorSpan2, `メッセージは145文字以下で入力してください。現在: ${characterCount}文字`);
+              return false;
+          }
+
+          formData.name = name;
+          formData.birthdate = date;
+          formData.message = message;
+          saveFormData();
+
+          hideError(errorSpan2);
+          return true;
+      }
+
+      if (step1Button) {
+          step1Button.addEventListener('click', function(e) {
+              e.preventDefault();
+              if (validateStep1()) {
+                  showStep(2);
+              }
+          });
+      }
+
+      if (nameInput1) {
+          nameInput1.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (validateStep1()) {
+                      showStep(2);
+                  }
+              }
+          });
+      }
+
+      if (nameInput1) {
+          nameInput1.addEventListener('input', function() {
+              formData.name = nameInput1.value.trim();
+              saveFormData();
+
+
+
+              flipbookInitialized = false;
+          });
+      }
+
+      if (dateInput1) {
+          dateInput1.addEventListener('change', async function() {
+              const oldDate = formData.birthdate;
+              formData.birthdate = dateInput1.value;
+              saveFormData();
+
+              if (oldDate !== formData.birthdate) {
+                  await regenerateZodiacImages();
+              }
+              updateDateFormats();
+              flipbookInitialized = false;
+          });
+      }
+
+      if (nameInput2) {
+          nameInput2.addEventListener('input', function() {
+              formData.name = nameInput2.value.trim();
+              saveFormData();
+
+
+              flipbookInitialized = false;
+          });
+      }
+
+      if (dateInput2) {
+          dateInput2.addEventListener('change', async function() {
+              const oldDate = formData.birthdate;
+              formData.birthdate = dateInput2.value;
+              saveFormData();
+
+              if (oldDate !== formData.birthdate) {
+                  await regenerateZodiacImages();
+              }
+              updateDateFormats();
+              flipbookInitialized = false;
+          });
+      }
+
+      if (step2Button) {
+          step2Button.addEventListener('click', function(e) {
+              e.preventDefault();
+
+              if (validateStep2()) {
+                  showStep(3);
+              }
+          });
+      }
+
+      if (step3Button) {
+          step3Button.addEventListener('click', function(e) {
+              e.preventDefault();
+              showStep(4);
+          });
+      }
+
+      if (hardcoverButton) {
+          hardcoverButton.addEventListener('click', function() {
+              formData.bookType = 'ハードカバー';
+              saveFormData();
+              updateBookTypeButtons();
+              location.reload();
+          });
+      }
+
+      if (softcoverButton) {
+          softcoverButton.addEventListener('click', function() {
+              formData.bookType = 'ソフトカバー';
+              saveFormData();
+              updateBookTypeButtons();
+              location.reload();
+          });
+      }
+
+      if (restartButton) {
+          restartButton.addEventListener('click', function() {
+              localStorage.removeItem('bookFormData');
+              localStorage.removeItem('bookCurrentStep');
+
+              formData = {
+                  name: '',
+                  birthdate: '',
+                  message: '',
+                  bookType: 'ハードカバー'
+              };
+
+              if (nameInput1) nameInput1.value = '';
+              if (dateInput1) dateInput1.value = '';
+
+              flipbookInitialized = false;
+
+              showStep(1);
+              window.location.reload();
+          });
+      }
+
+      [nameInput1, nameInput2].forEach(input => {
+          if (input) {
+              input.addEventListener('input', function() {
+                  const value = input.value.trim();
+                  if (value && !isJapanese(value) || value.length > 10) {
+                      input.style.borderColor = '#ff0000';
+                      input.style.borderWidth = '2px';
+                      input.style.borderStyle = 'solid';
+                  } else {
+                      input.style.borderColor = '';
+                      input.style.borderWidth = '';
+                      input.style.borderStyle = '';
+                  }
+              });
+          }
+      });
+
+      function init() {
+          showStep(currentStep);
+          updateBookTypeButtons();
+
+          if (formData.birthdate && !generatedZodiacImageUrls) {
+              regenerateZodiacImages().catch(error => {
+                  console.error('Error generating initial zodiac images:', error);
+              });
+          }
+      }
+
+      init();
+
+      window.getFormData = () => formData;
+      window.getCurrentStep = () => currentStep;
+      window.goToStep = (step) => showStep(step);
+      window.clearData = () => {
+          localStorage.removeItem('bookFormData');
+          localStorage.removeItem('bookCurrentStep');
+          location.reload();
+      };
+
+      window.testZodiacGeneration = async (dateString) => {
+          try {
+              const urls = generateZodiacBook(dateString || formData.birthdate);
+              console.log('Generated image URLs:', urls);
+              window.open(urls[0], '_blank');
+          } catch (error) {
+              console.error('Error testing zodiac generation:', error);
+          }
+      };
+
+      window.getZodiacInfo = (dateString) => {
+          const date = new Date(dateString || formData.birthdate);
+          const year = date.getFullYear();
+          const day = date.getDate();
+
+          const western = getWesternZodiac(date);
+          const chineseAnimal = getChineseAnimal(year);
+          const element = getElement(year);
+          const birthdayNumber = getBirthdayNumber(day);
+
+          return {
+              date: dateString || formData.birthdate,
+              western,
+              chineseAnimal,
+              element,
+              birthdayNumber
+          };
+      };
+
+        function updateFormInputs() {
+            const form = document.querySelector('[data-type="add-to-cart-form"]');
+            if (!form) {
+                console.log('Target form with data-type="add-to-cart-form" not found');
+                return;
+            }
+
+            for (const key in formData) {
+                if (formData.hasOwnProperty(key)) {
+                    const inputName = `properties[child${key}]`;
+                    let input = form.querySelector(`input[name="${inputName}"]`);
+                    let value = formData[key];
+
+                    // Format birthdate to YYYY年MM月DD日 for childbirthdate key
+                    if (key === 'birthdate' && value) {
+                        const date = new Date(value);
+                        value = new Intl.DateTimeFormat("ja-JP", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric"
+                        }).format(date);
+                    }
+
+                    if (input) {
+                        input.value = value;
+                    } else {
+                        input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = inputName;
+                        input.value = value;
+                        form.appendChild(input);
+                    }
+                }
+            }
+        }
+
+      function inputhiddenarray() {
+          const form = document.querySelector('[data-type="add-to-cart-form"]');
+          let pagesInput = form.querySelector('input[name="properties[_UrlArray]"]');
+          if (!pagesInput) {
+              pagesInput = document.createElement('input');
+              pagesInput.type = 'hidden';
+              pagesInput.name = 'properties[_UrlArray]';
+              pagesInput.value = `${pdfpages}`;
+              form.appendChild(pagesInput);
+          }else{
+            pagesInput.value = `${pdfpages}`;
+        }
+      }
+
+      function inputhiddeneditpagedetail() {
+          const form = document.querySelector('[data-type="add-to-cart-form"]');
+          let pagesInput = form.querySelector('input[name="properties[_textinfoarray]"]');
+          if (!pagesInput) {
+              pagesInput = document.createElement('input');
+              pagesInput.type = 'hidden';
+              pagesInput.name = 'properties[_textinfoarray]';
+              pagesInput.value = JSON.stringify(editpagedetail);
+              form.appendChild(pagesInput);
+          }
+      }
+    
+
+  });
+</script>     
